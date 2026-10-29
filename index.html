@@ -2,244 +2,47 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PopFlipariz - Web Bloco de desenhos e animações FBF</title>
-  <style>
-    :root {
-      --bg-pink: #fff0f5;
-      --accent-pink: #ff69b4;
-      --dark-purple: #4a2e35;
-      --panel-bg: #ffffff;
-      --border-color: #ffb6c1;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-pink);
-      color: var(--dark-purple);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    header {
-      background-color: var(--panel-bg);
-      padding: 10px 20px;
-      border-bottom: 2px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    h1 {
-      font-size: 1.2rem;
-      color: var(--accent-pink);
-    }
-
-    .workspace {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      background: #eaeaea;
-    }
-
-    .canvas-container {
-      position: relative;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      background: #ffffff;
-    }
-
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      touch-action: none; /* Melhora a resposta no toque em celulares/tablets */
-    }
-
-    .toolbar {
-      background-color: var(--panel-bg);
-      padding: 12px;
-      border-top: 2px solid var(--border-color);
-      display: flex;
-      gap: 15px;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .tool-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    button {
-      background: #fff;
-      border: 2px solid var(--accent-pink);
-      color: var(--dark-purple);
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    button.active, button:hover {
-      background: var(--accent-pink);
-      color: #fff;
-    }
-
-    input[type="color"] {
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      background: none;
-    }
-
-    input[type="range"] {
-      accent-color: var(--accent-pink);
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PopFlipariz - Estúdio de Animação FBF</title>
+  
+  <!-- Estilos organizados na pasta css -->
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
+  <!-- Cabeçalho do Estúdio -->
   <header>
     <h1>✨ PopFlipariz ✨</h1>
-    <span>Base do Motor v1.0</span>
+    <span style="font-size: 0.8rem; color: #7a5c65;">PopPink Studio</span>
   </header>
 
+  <!-- Área de Trabalho (Workspace) com o Canvas de Desenho -->
   <main class="workspace">
-    <div class="canvas-container" id="canvasContainer" style="width: 800px; height: 600px;">
+    <div class="canvas-container" id="canvasContainer">
+      <!-- Resolução interna de desenho otimizada para performance -->
       <canvas id="paintCanvas" width="800" height="600"></canvas>
     </div>
   </main>
 
+  <!-- Barra de Ferramentas Inferior -->
   <footer class="toolbar">
     <div class="tool-group">
       <button id="btnPincel" class="active">✏️ Pincel</button>
       <button id="btnBorracha">🧹 Borracha</button>
-      <button id="btnLimpar">🗑️ Limpar Tela</button>
+      <button id="btnLimpar">🗑️ Limpar</button>
     </div>
 
     <div class="tool-group">
-      <label for="colorPicker">Cor:</label>
-      <input type="color" id="colorPicker" value="#ff69b4">
+      <input type="color" id="colorPicker" value="#ff69b4" title="Cor do Pincel">
     </div>
 
     <div class="tool-group">
-      <label for="brushSize">Tamanho (<span id="sizeVal">5</span>px):</label>
+      <label for="brushSize">Tamanho: <span id="sizeVal">5</span>px</label>
       <input type="range" id="brushSize" min="1" max="50" value="5">
     </div>
   </footer>
 
-  <script>
-    const canvas = document.getElementById('paintCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Estado interno das ferramentas
-    let desenhando = false;
-    let modoAtual = 'pincel'; // 'pincel' ou 'borracha'
-    let corAnterior = '#ff69b4';
-    let ultimoX = 0;
-    let ultimoY = 0;
-
-    // Configurações do traço para suavidade (Anti-aliasing)
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    function obterCoordenadas(e) {
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-      };
-    }
-
-    function iniciarTraco(e) {
-      desenhando = true;
-      const pos = obterCoordenadas(e);
-      ultimoX = pos.x;
-      ultimoY = pos.y;
-    }
-
-    function desenhar(e) {
-      if (!desenhando) return;
-      e.preventDefault();
-
-      const pos = obterCoordenadas(e);
-      const tamanho = document.getElementById('brushSize').value;
-
-      ctx.beginPath();
-      ctx.moveTo(ultimoX, ultimoY);
-      ctx.lineTo(pos.x, pos.y);
-
-      if (modoAtual === 'borracha') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.lineWidth = tamanho * 2;
-      } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = document.getElementById('colorPicker').value;
-        ctx.lineWidth = tamanho;
-      }
-
-      ctx.stroke();
-      ultimoX = pos.x;
-      ultimoY = pos.y;
-    }
-
-    function pararTraco() {
-      desenhando = false;
-      ctx.beginPath();
-    }
-
-    // Eventos de Mouse e Toque (Mobile/Tablet)
-    canvas.addEventListener('mousedown', iniciarTraco);
-    canvas.addEventListener('mousemove', desenhar);
-    window.addEventListener('mouseup', pararTraco);
-
-    canvas.addEventListener('touchstart', iniciarTraco, { passive: false });
-    canvas.addEventListener('touchmove', desenhar, { passive: false });
-    window.addEventListener('touchend', pararTraco);
-
-    // Controles da Interface
-    const btnPincel = document.getElementById('btnPincel');
-    const btnBorracha = document.getElementById('btnBorracha');
-    const colorPicker = document.getElementById('colorPicker');
-    const brushSize = document.getElementById('brushSize');
-
-    btnPincel.addEventListener('click', () => {
-      modoAtual = 'pincel';
-      btnPincel.classList.add('active');
-      btnBorracha.classList.remove('active');
-    });
-
-    btnBorracha.addEventListener('click', () => {
-      modoAtual = 'borracha';
-      btnBorracha.classList.add('active');
-      btnPincel.classList.remove('active');
-    });
-
-    document.getElementById('btnLimpar').addEventListener('click', () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
-
-    brushSize.addEventListener('input', (e) => {
-      document.getElementById('sizeVal').innerText = e.target.value;
-    });
-  </script>
+  <!-- Script principal modular (gerencia os eventos e o motor de pincel) -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
