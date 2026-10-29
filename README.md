@@ -1,2 +1,3 @@
 # PopFlipariz
-Baseado no software original Kleki por bitbof, com acréscimos de código para ser possível fazeeer animação FBF e outros recursos adicionais por PopPink Studio (ou Coffeeinada, ambas sou eu, só o nome que muda)
+Um software de navegador para desenhar e fazer animações fbf sem anúncios, e grátis, pq além de ser pra descomplicar e se divertir, eu mesma vou usar LOL. 
+aproveite e dê uma passadinha pelo meu blog: poppinkstudio.blogspot.com
