@@ -82,6 +82,7 @@ body, html {
   position: relative;
   box-shadow: 0 0 20px rgba(0,0,0,0.8);
   background: #fff;
+  transform-origin: center center;
 }
 
 #right-panel {
@@ -151,7 +152,6 @@ body, html {
   background: #2f2f3f;
 }
 
-/* Estilos específicos para os novos painéis de Seleção e Transformação */
 #panelSelecao, #panelTransformar, #panelPontoFuga {
   background: #232330;
   border: 1px solid #3a3a4a;
