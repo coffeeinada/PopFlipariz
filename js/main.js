@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal (Compatível com Módulos e DOM Pronto)
+ * PopFlipariz - Ponto de Entrada Principal
  * Caminho: js/main.js
  */
 
@@ -67,12 +67,12 @@ function iniciarPopFlipariz() {
     canvasContainer.addEventListener('mousedown', (e) => {
       atualizarReferenciaCanvasAtivo();
       if (ferramentaAtual === 'balde') {
-        baldeTool.executar(e);
+        if (typeof baldeTool.executar === 'function') baldeTool.executar(e);
       } else if (ferramentaAtual === 'formas') {
         const rect = canvasAtivo.getBoundingClientRect();
         const x = (e.clientX - rect.left) * (canvasAtivo.width / rect.width);
         const y = (e.clientY - rect.top) * (canvasAtivo.height / rect.height);
-        formasTool.iniciarForma(x, y);
+        if (typeof formasTool.iniciarForma === 'function') formasTool.iniciarForma(x, y);
       }
     });
 
@@ -81,17 +81,17 @@ function iniciarPopFlipariz() {
         const rect = canvasAtivo.getBoundingClientRect();
         const x = (e.clientX - rect.left) * (canvasAtivo.width / rect.width);
         const y = (e.clientY - rect.top) * (canvasAtivo.height / rect.height);
-        formasTool.atualizarProgresso(x, y);
-        formasTool.fixarFormaNoCanvas();
+        if (typeof formasTool.atualizarProgresso === 'function') {
+          formasTool.atualizarProgresso(x, y);
+          formasTool.fixarFormaNoCanvas();
+        }
       }
     });
 
     // 3. Função segura para ligar cliques a botões da interface
     function ligarBotao(id, callback) {
       const el = document.getElementById(id);
-      if (el) {
-        el.onclick = callback;
-      }
+      if (el) el.onclick = callback;
     }
 
     function ativarBotaoFerramenta(idBotao, nomeFerramenta) {
@@ -117,7 +117,7 @@ function iniciarPopFlipariz() {
     ligarBotao('btnSelecao', () => ativarBotaoFerramenta('btnSelecao', 'selecao'));
     ligarBotao('btnMaozinha', () => {
       ativarBotaoFerramenta('btnMaozinha', 'maozinha');
-      maozinhaTool.setAtivo(true);
+      if (typeof maozinhaTool.setAtivo === 'function') maozinhaTool.setAtivo(true);
     });
 
     // Gestão de Camadas
@@ -134,6 +134,20 @@ function iniciarPopFlipariz() {
     ligarBotao('btnRemoverCamada', () => {
       layerManager.removerCamada();
       atualizarReferenciaCanvasAtivo();
+    });
+
+    // Gestão de Ficheiros
+    ligarBotao('btnNovoProjeto', () => {
+      if (confirm('Criar um novo projeto vai limpar o trabalho atual. Desejas continuar?')) {
+        if (typeof fileTool.novoProjeto === 'function') fileTool.novoProjeto();
+        renderizarTimeline();
+        layerManager.atualizarUIlistaCamadas();
+        atualizarReferenciaCanvasAtivo();
+      }
+    });
+
+    ligarBotao('btnExportar', () => {
+      if (typeof fileTool.exportarProjeto === 'function') fileTool.exportarProjeto();
     });
 
     // Histórico e Zoom
@@ -188,6 +202,25 @@ function iniciarPopFlipariz() {
       renderizarTimeline();
       atualizarReferenciaCanvasAtivo();
     });
+
+    // Controlos adicionais da Timeline (FPS / Loop)
+    const inputFPS = document.getElementById('inputFPS');
+    if (inputFPS) {
+      inputFPS.onchange = (e) => {
+        if (typeof animationManager.setFPS === 'function') {
+          animationManager.setFPS(parseInt(e.target.value) || 12);
+        }
+      };
+    }
+
+    const chkLoop = document.getElementById('chkLoop');
+    if (chkLoop) {
+      chkLoop.onchange = (e) => {
+        if (typeof animationManager.setLoop === 'function') {
+          animationManager.setLoop(e.target.checked);
+        }
+      };
+    }
 
     function renderizarTimeline() {
       const container = document.getElementById('timeline-frames-container');
