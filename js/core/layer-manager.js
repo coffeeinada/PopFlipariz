@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Gestor de Camadas (Inicia com 1 e mínimo de 1 camada)
+ * PopFlipariz - Gestor de Camadas Completo
  * Caminho: js/core/layer-manager.js
  */
 
@@ -56,7 +56,7 @@ export class LayerManager {
   }
 
   removerCamada(indice = this.indiceAtivo) {
-    // Regra estricta: O mínimo de camadas será sempre 1
+    // Regra estrita: O mínimo de camadas será sempre 1
     if (this.camadas.length <= 1) {
       alert('O projeto precisa de manter pelo menos uma camada!');
       return;
