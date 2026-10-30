@@ -12,7 +12,6 @@ export class HandTool {
     this.startX = 0;
     this.startY = 0;
     
-    // Estado de Transformação do Workspace (Pan, Zoom preservado, Rotação em graus)
     this.panX = 0;
     this.panY = 0;
     this.zoom = 1.0;
