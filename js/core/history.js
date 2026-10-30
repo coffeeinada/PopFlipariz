@@ -1,54 +1,68 @@
 /**
- * PopFlipariz - Gerenciador de Histórico (Undo / Redo)
+ * PopFlipariz - Gestor de Histórico (Desfazer e Refazer Seguro)
  * Caminho: js/core/history.js
  */
 
 export class HistoryManager {
-  constructor(canvas, ctx, maxSteps = 20) {
-    this.canvas = canvas;
-    this.ctx = ctx;
-    this.maxSteps = maxSteps;
+  constructor(layerManager = null) {
+    this.layerManager = layerManager;
     this.undoStack = [];
     this.redoStack = [];
-    
-    // Salva o estado inicial em branco
-    this.salvarEstado();
+    this.maxStops = 30;
+  }
+
+  // Permite vincular o LayerManager caso tenha sido instanciado depois
+  definirLayerManager(layerManager) {
+    this.layerManager = layerManager;
   }
 
   salvarEstado() {
-    // Se a pilha exceder o limite, remove o estado mais antigo
-    if (this.undoStack.length >= this.maxSteps) {
-      this.undoStack.shift();
+    if (!this.layerManager || typeof this.layerManager.obterCanvasAtivo !== 'function') return;
+    
+    const canvas = this.layerManager.obterCanvasAtivo();
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    try {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      this.undoStack.push(imageData);
+      if (this.undoStack.length > this.maxStops) {
+        this.undoStack.shift();
+      }
+      this.redoStack = []; // Limpa o refazer em novas ações
+    } catch (e) {
+      console.warn('Não foi possível salvar o estado do histórico:', e);
     }
-    
-    const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-    this.undoStack.push(imageData);
-    
-    // Sempre que um novo traço é feito, limpa a pilha de refazer (redo)
-    this.redoStack = [];
   }
 
   undo() {
-    if (this.undoStack.length <= 1) return false; // Mantém pelo menos o estado inicial vazio
-    
-    // Move o estado atual para o redo
+    if (this.undoStack.length <= 1 || !this.layerManager) return false;
     const estadoAtual = this.undoStack.pop();
     this.redoStack.push(estadoAtual);
-    
-    // Restaura o estado anterior
+
     const estadoAnterior = this.undoStack[this.undoStack.length - 1];
-    this.ctx.putImageData(estadoAnterior, 0, 0);
-    return true;
+    const canvas = this.layerManager.obterCanvasAtivo();
+    const ctx = canvas.getContext('2d');
+    if (ctx && estadoAnterior) {
+      ctx.putImageData(estadoAnterior, 0, 0);
+      return true;
+    }
+    return false;
   }
 
   redo() {
-    if (this.redoStack.length === 0) return false;
-    
-    // Pega o estado do redo e joga de volta no undo
+    if (this.redoStack.length === 0 || !this.layerManager) return false;
     const proximoEstado = this.redoStack.pop();
     this.undoStack.push(proximoEstado);
-    
-    this.ctx.putImageData(proximoEstado, 0, 0);
-    return true;
+
+    const canvas = this.layerManager.obterCanvasAtivo();
+    const ctx = canvas.getContext('2d');
+    if (ctx && proximoEstado) {
+      ctx.putImageData(proximoEstado, 0, 0);
+      return true;
+    }
+    return false;
   }
 }
