@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Área de Camadas Completa
+ * PopFlipariz - Gestor de Camadas Completo e Funcional
  * Caminho: js/core/layer-manager.js
  */
 
@@ -12,9 +12,8 @@ export class LayerManager {
     
     this.camadas = [];
     this.indiceAtivo = 0;
-    this.copiaBuffer = null;
 
-    // Cria a primeira camada padrão
+    // Cria obrigatoriamente a primeira camada ao iniciar
     this.adicionarCamada('Camada 1');
   }
 
@@ -40,7 +39,6 @@ export class LayerManager {
       canvas: canvas,
       ctx: canvas.getContext('2d'),
       visivel: true,
-      bloqueadaAlpha: false,
       opacidade: 1.0,
       blendMode: 'normal'
     };
@@ -49,6 +47,11 @@ export class LayerManager {
     this.indiceAtivo = this.camadas.length - 1;
     this.atualizarZIndex();
     this.atualizarUIlistaCamadas();
+    
+    if (this.historyManager) {
+      this.historyManager.salvarEstado();
+    }
+
     return novaCamada;
   }
 
@@ -82,7 +85,6 @@ export class LayerManager {
       canvas: novoCanvas,
       ctx: novoCtx,
       visivel: alvo.visivel,
-      bloqueadaAlpha: alvo.bloqueadaAlpha,
       opacidade: alvo.opacidade,
       blendMode: alvo.blendMode
     };
@@ -119,13 +121,14 @@ export class LayerManager {
     if (!lista) return;
     lista.innerHTML = '';
 
+    // Renderiza a lista de cima para baixo (ou invertida para ver a ordem correta)
     this.camadas.forEach((camada, idx) => {
       const li = document.createElement('li');
       li.style.display = 'flex';
       li.style.justifyContent = 'space-between';
       li.style.alignItems = 'center';
-      li.style.padding = '4px';
-      li.style.margin = '2px 0';
+      li.style.padding = '6px 8px';
+      li.style.margin = '4px 0';
       li.style.background = idx === this.indiceAtivo ? '#383848' : '#252530';
       li.style.borderRadius = '4px';
       li.style.cursor = 'pointer';
@@ -140,6 +143,9 @@ export class LayerManager {
 
       const btnOlho = document.createElement('button');
       btnOlho.innerText = camada.visivel ? '👁️' : '🚫';
+      btnOlho.style.background = 'transparent';
+      btnOlho.style.border = 'none';
+      btnOlho.style.cursor = 'pointer';
       btnOlho.onclick = (e) => {
         e.stopPropagation();
         camada.visivel = !camada.visivel;
@@ -154,6 +160,9 @@ export class LayerManager {
   }
 
   obterCanvasAtivo() {
+    if (!this.camadas[this.indiceAtivo]) {
+      this.adicionarCamada();
+    }
     return this.camadas[this.indiceAtivo].canvas;
   }
 
