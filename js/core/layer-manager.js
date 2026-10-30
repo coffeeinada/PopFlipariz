@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Gestor de Camadas Completo e Funcional
+ * PopFlipariz - Gestor de Camadas (Inicia com 1 e mínimo de 1 camada)
  * Caminho: js/core/layer-manager.js
  */
 
@@ -13,7 +13,7 @@ export class LayerManager {
     this.camadas = [];
     this.indiceAtivo = 0;
 
-    // Cria obrigatoriamente a primeira camada ao iniciar
+    // Garante que inicia sempre com pelo menos 1 camada criada de imediato
     this.adicionarCamada('Camada 1');
   }
 
@@ -48,7 +48,7 @@ export class LayerManager {
     this.atualizarZIndex();
     this.atualizarUIlistaCamadas();
     
-    if (this.historyManager) {
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
       this.historyManager.salvarEstado();
     }
 
@@ -56,6 +56,7 @@ export class LayerManager {
   }
 
   removerCamada(indice = this.indiceAtivo) {
+    // Regra estricta: O mínimo de camadas será sempre 1
     if (this.camadas.length <= 1) {
       alert('O projeto precisa de manter pelo menos uma camada!');
       return;
@@ -67,12 +68,19 @@ export class LayerManager {
     if (this.indiceAtivo >= this.camadas.length) {
       this.indiceAtivo = this.camadas.length - 1;
     }
+    
     this.atualizarZIndex();
     this.atualizarUIlistaCamadas();
+
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   duplicarCamada(indice = this.indiceAtivo) {
     const alvo = this.camadas[indice];
+    if (!alvo) return;
+
     const novoCanvas = this.criarCanvasVazio();
     const novoCtx = novoCanvas.getContext('2d');
     novoCtx.drawImage(alvo.canvas, 0, 0);
@@ -97,8 +105,11 @@ export class LayerManager {
 
   limparCamada(indice = this.indiceAtivo) {
     const camada = this.camadas[indice];
+    if (!camada) return;
     camada.ctx.clearRect(0, 0, this.width, this.height);
-    if (this.historyManager) this.historyManager.salvarEstado();
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   atualizarZIndex() {
@@ -121,7 +132,6 @@ export class LayerManager {
     if (!lista) return;
     lista.innerHTML = '';
 
-    // Renderiza a lista de cima para baixo (ou invertida para ver a ordem correta)
     this.camadas.forEach((camada, idx) => {
       const li = document.createElement('li');
       li.style.display = 'flex';
