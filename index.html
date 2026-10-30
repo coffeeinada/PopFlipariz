@@ -8,25 +8,22 @@
 </head>
 <body>
   <div id="app-container">
-    <!-- Barra Superior / Menu de Arquivo e Ferramentas Globais -->
+    <!-- Barra Superior -->
     <header id="top-bar">
       <div class="logo">🎬 <span>PopFlipariz</span></div>
       
       <div class="top-controls">
-        <!-- Área de Arquivo 📄 -->
         <div class="group">
           <input type="text" id="inputNomeObra" value="Minha Animacao PopFlip" placeholder="Nome da Obra">
           <button id="btnNovoProjeto" title="Novo Projeto">📄 Novo</button>
           <button id="btnExportar" title="Exportar / Baixar">💾 Exportar</button>
         </div>
 
-        <!-- Área de Desfazer e Refazer ↩️ ↪️ -->
         <div class="group">
           <button id="btnDesfazer" title="Desfazer (Ctrl+Z)">↩️</button>
           <button id="btnRefazer" title="Refazer (Ctrl+Y)">↪️</button>
         </div>
 
-        <!-- Área de Zoom 🔍 -->
         <div class="group">
           <button id="btnZoomIn" title="Zoom In (I)">🔍+</button>
           <button id="btnZoomOut" title="Zoom Out (O)">🔍-</button>
@@ -44,11 +41,12 @@
         <button id="btnFormas" title="Formas Geométricas">⭕ Formas</button>
         <button id="btnSelecao" title="Laço de Seleção">🤠 Seleção</button>
         <button id="btnMaozinha" title="Mãozinha / Pan (Espaço)">🤚 Mãozinha</button>
+        <button id="btnPontoFuga" title="Ponto de Fuga & Grade">📐 Ponto de Fuga</button>
         
         <hr>
 
-        <!-- Área de Cores 🎨 -->
-        <div class="color-picker-section">
+        <!-- Cores -->
+        <div class="color-picker-section" style="display: flex; flex-direction: column; gap: 6px;">
           <label for="pickerCorPrimaria">Cor Primária / Contorno</label>
           <input type="color" id="pickerCorPrimaria" value="#ff69b4">
           <button id="btnTrocarCores" title="Trocar Primária/Secundária">🔄 Swap</button>
@@ -56,95 +54,74 @@
 
         <hr>
 
-        <!-- Seção de Paleta de Cores 🎨 -->
+        <!-- Paletas -->
         <div class="palette-section" style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">🎨 Paletas de Cores</span>
-          
           <div style="display: flex; gap: 4px;">
-            <select id="selectPaleta" style="flex: 1; background: #252530; color: #fff; border: 1px solid #444; padding: 3px; border-radius: 3px;"></select>
+            <select id="selectPaleta" style="flex: 1;"></select>
             <button id="btnNovaPaleta" title="Criar Nova Paleta">➕</button>
             <button id="btnExcluirPaleta" title="Excluir Paleta Atual">🗑️</button>
           </div>
-
           <div style="display: flex; gap: 4px;">
             <button id="btnExportarPaletas" style="flex: 1;">📤 Exportar</button>
             <button id="btnImportarPaletas" style="flex: 1;">📥 Importar</button>
             <input type="file" id="inputImportarPaletas" accept=".json" style="display: none;">
           </div>
-
-          <div id="paleta-cores-container" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto; background: #1a1a24; padding: 5px; border-radius: 4px; border: 1px solid #333; min-height: 38px;"></div>
-
+          <div id="paleta-cores-container" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 80px; overflow-y: auto; background: #1a1a24; padding: 5px; border-radius: 4px; border: 1px solid #333;"></div>
           <div style="display: flex; gap: 4px;">
-            <button id="btnAddCorPaleta" style="flex: 1;" title="Adicionar cor atual">➕ Criar Cor</button>
-            <button id="btnSubstituirCor" style="flex: 1;" title="Substituir cor selecionada">🔄 Substituir</button>
-            <button id="btnRemoverCor" style="flex: 1;" title="Remover cor">❌ Apagar</button>
+            <button id="btnAddCorPaleta" style="flex: 1;">➕ Criar Cor</button>
+            <button id="btnSubstituirCor" style="flex: 1;">🔄 Substituir</button>
+            <button id="btnRemoverCor" style="flex: 1;">❌ Apagar</button>
           </div>
         </div>
 
         <hr>
 
-        <!-- Propriedades da Ferramenta de Formas ⭕ -->
+        <!-- Ponto de Fuga / Grade Controls -->
+        <div id="panelPontoFuga" class="ponto-fuga-section" style="display: none; flex-direction: column; gap: 8px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">📐 Ponto de Fuga & Grade</span>
+          <label><input type="checkbox" id="chkAtivarGrade" checked> Ativar Grade</label>
+          <label><input type="checkbox" id="chkAtivarPontoFuga" checked> Ativar Ponto de Fuga</label>
+          <label>Cor do Traçado: <input type="color" id="pickerCorGuia" value="#00ffff" style="width: 100%; height: 22px;"></label>
+          <label>Largura (1 - 10): <input type="number" id="inputLarguraGuia" value="1.0" min="1" max="10" step="1" style="width: 100%;"></label>
+          <label>Quantidade de Linhas (2 - 40): <input type="number" id="inputQtdLinhasFuga" value="16" min="2" max="40" step="1" style="width: 100%;"></label>
+          <span style="font-size: 10px; color: #aaa;">Dica: Clica e arrasta no canvas para mover o ponto de fuga.</span>
+        </div>
+
+        <!-- Propriedades de Formas -->
         <div class="shapes-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">⭕ Definições de Formas</span>
-
           <label><input type="checkbox" id="chkFormaBorracha"> Modo Borracha</label>
-
           <label>Forma: 
-            <select id="selectTipoForma" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+            <select id="selectTipoForma" style="width: 100%;">
               <option value="circulo">Círculo / Elipse</option>
               <option value="poligono">Polígono (3 a 10 Pontas)</option>
               <option value="linha">Linha Reta Simples</option>
               <option value="curva">Linha Curvada (Suave)</option>
             </select>
           </label>
-
-          <label id="containerPontosPoligono">Pontos (3 - 10): 
-            <input type="number" id="inputPontosPoligono" value="4" min="3" max="10" step="1" style="width: 100%;">
-          </label>
-
+          <label id="containerPontosPoligono">Pontos (3 - 10): <input type="number" id="inputPontosPoligono" value="4" min="3" max="10" step="1" style="width: 100%;"></label>
           <label><input type="checkbox" id="chkPreenchimentoForma" checked> Preencher</label>
-
-          <label>Cor do Preenchimento: 
-            <input type="color" id="pickerPreenchimento" value="#ffb6c1" style="width: 100%; height: 25px; border: none; background: none; cursor: pointer;">
-          </label>
-
-          <label>Largura da Linha (0.1 - 200): 
-            <input type="number" id="inputLarguraLinha" value="4.0" min="0.1" max="200.0" step="0.1" style="width: 100%;">
-          </label>
-
-          <label>Opacidade (0.05 - 1.0): 
-            <input type="number" id="inputOpacidadeForma" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
-          </label>
-
-          <!-- Botões de Confirmação / Fixação -->
+          <label>Cor do Preenchimento: <input type="color" id="pickerPreenchimento" value="#ffb6c1" style="width: 100%; height: 22px; border: none; background: none; cursor: pointer;"></label>
+          <label>Largura da Linha: <input type="number" id="inputLarguraLinha" value="4.0" min="0.1" max="200.0" step="0.1" style="width: 100%;"></label>
+          <label>Opacidade: <input type="number" id="inputOpacidadeForma" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;"></label>
           <div style="display: flex; gap: 4px; margin-top: 4px;">
-            <button id="btnConfirmarForma" style="flex: 1; background: #2e7d32; color: #fff; font-weight: bold; padding: 6px; border: none; border-radius: 4px; cursor: pointer;" title="Fixar forma (Enter)">✅ Fixar (Enter)</button>
-            <button id="btnCancelarForma" style="flex: 1; background: #c62828; color: #fff; padding: 6px; border: none; border-radius: 4px; cursor: pointer;" title="Cancelar forma (Esc)">❌ Cancelar</button>
+            <button id="btnConfirmarForma" style="flex: 1; background: #2e7d32; color: #fff; font-weight: bold;">✅ Fixar (Enter)</button>
+            <button id="btnCancelarForma" style="flex: 1; background: #c62828; color: #fff;">❌ Cancelar</button>
           </div>
         </div>
 
         <hr>
 
-        <!-- Propriedades do Balde de Tinta 🪣 -->
+        <!-- Propriedades do Balde -->
         <div class="bucket-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">🪣 Definições do Balde</span>
-
           <label><input type="checkbox" id="chkBaldeBorracha"> Modo Borracha</label>
-
-          <label>Opacidade (0.05 - 1.0): 
-            <input type="number" id="inputBaldeOpacidade" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
-          </label>
-
-          <label>Tolerância (0 - 255): 
-            <input type="number" id="inputBaldeTolerancia" value="32" min="0" max="255" step="1" style="width: 100%;">
-          </label>
-
-          <label>Expandir (0 - 7, aceita decimais): 
-            <input type="number" id="inputBaldeExpandir" value="0.0" min="0.0" max="7.0" step="0.1" style="width: 100%;">
-          </label>
-
+          <label>Opacidade: <input type="number" id="inputBaldeOpacidade" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;"></label>
+          <label>Tolerância (0 - 255): <input type="number" id="inputBaldeTolerancia" value="32" min="0" max="255" step="1" style="width: 100%;"></label>
+          <label>Expandir (0 - 7): <input type="number" id="inputBaldeExpandir" value="0.0" min="0.0" max="7.0" step="0.1" style="width: 100%;"></label>
           <label>Amostragem: 
-            <select id="selectBaldeAmostragem" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+            <select id="selectBaldeAmostragem" style="width: 100%;">
               <option value="atual">Camada Atual</option>
               <option value="todas">Todas as Camadas</option>
             </select>
@@ -153,24 +130,14 @@
 
         <hr>
 
-        <!-- Propriedades Avançadas do Pincel 🖌️ -->
+        <!-- Pincel -->
         <div class="brush-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">⚙️ Definições do Pincel</span>
-          
-          <label>Tamanho (1 - 200): 
-            <input type="number" id="inputTamanho" value="8.0" min="0.1" max="200.0" step="0.1" style="width: 100%;">
-          </label>
-
-          <label>Opacidade (0.05 - 1.0): 
-            <input type="number" id="inputOpacidade" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
-          </label>
-
-          <label>Estabilizador (0 - 10): 
-            <input type="number" id="inputEstabilizador" value="0" min="0" max="10" step="1" style="width: 100%;">
-          </label>
-
+          <label>Tamanho (1 - 200): <input type="number" id="inputTamanho" value="8.0" min="0.1" max="200.0" step="0.1" style="width: 100%;"></label>
+          <label>Opacidade: <input type="number" id="inputOpacidade" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;"></label>
+          <label>Estabilizador (0 - 10): <input type="number" id="inputEstabilizador" value="0" min="0" max="10" step="1" style="width: 100%;"></label>
           <label>Tipo de Pincel: 
-            <select id="selectTipoPincel" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+            <select id="selectTipoPincel" style="width: 100%;">
               <option value="normal">Normal (Suave)</option>
               <option value="pixel">Pixel Art</option>
               <option value="spray">Spray (Aerógrafo)</option>
@@ -184,27 +151,19 @@
 
         <hr>
 
-        <!-- Propriedades Avançadas da Borracha 🧹 -->
+        <!-- Borracha -->
         <div class="eraser-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">🧹 Definições da Borracha</span>
-          
-          <label>Tamanho (0 - 400): 
-            <input type="number" id="inputTamanhoBorracha" value="20" min="0" max="400" step="1" style="width: 100%;">
-          </label>
-
-          <label>Opacidade (0.05 - 1.0): 
-            <input type="number" id="inputOpacidadeBorracha" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
-          </label>
-
-          <label>Forma da Borracha: 
-            <select id="selectFormaBorracha" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+          <label>Tamanho (0 - 400): <input type="number" id="inputTamanhoBorracha" value="20" min="0" max="400" step="1" style="width: 100%;"></label>
+          <label>Opacidade: <input type="number" id="inputOpacidadeBorracha" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;"></label>
+          <label>Forma: 
+            <select id="selectFormaBorracha" style="width: 100%;">
               <option value="round">Redonda</option>
               <option value="square">Quadrada</option>
             </select>
           </label>
-
-          <label>Tipo da Borracha: 
-            <select id="selectTipoBorracha" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+          <label>Tipo: 
+            <select id="selectTipoBorracha" style="width: 100%;">
               <option value="normal">Normal (Borda Firme)</option>
               <option value="soft">Borradinha / Esfumaçada</option>
             </select>
@@ -212,31 +171,60 @@
         </div>
       </aside>
 
-      <!-- Área de Visualização do Canvas / Workspace principal -->
+      <!-- Workspace -->
       <main id="viewport">
         <div id="canvas-container"></div>
       </main>
 
-      <!-- Painel Direito: Camadas e Configurações -->
+      <!-- Painel Direito: Camadas -->
       <aside id="right-panel">
         <section id="layer-section">
-          <h3>🗂️ Camadas</h3>
+          <h3>🗂️ Camadas & Pastas</h3>
           <div class="layer-actions">
-            <button id="btnAddCamada">+ Nova</button>
+            <button id="btnAddCamada">+ Camada</button>
+            <button id="btnAddPasta">📁 + Pasta</button>
             <button id="btnDuplicarCamada">📋 Duplicar</button>
-            <button id="btnFundirCamada">⬇️ Fundir</button>
             <button id="btnRemoverCamada">🗑️ Excluir</button>
+            <button id="btnLimparCamada">🧹 Limpar</button>
+            <button id="btnEspelharH" title="Espelhar Horizontal">↔️ Espelhar H</button>
+            <button id="btnEspelharV" title="Espelhar Vertical">↕️ Espelhar V</button>
           </div>
+
+          <!-- Opções da Camada Selecionada -->
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; background: #252530; padding: 6px; border-radius: 4px; margin-top: 5px;">
+            <label>Mesclagem: 
+              <select id="selectBlendMode" style="width: 100%; margin-top: 2px;">
+                <option value="source-over">Normal</option>
+                <option value="darken">Escurecer</option>
+                <option value="multiply">Multiplicar</option>
+                <option value="color-burn">Superexposição de Cor</option>
+                <option value="linear-burn">Subexposição Linear</option>
+                <option value="lighten">Clarear</option>
+                <option value="screen">Tela (Screen)</option>
+                <option value="overlay">Sobrepor (Overlay)</option>
+                <option value="difference">Diferença</option>
+                <option value="exclusion">Exclusão</option>
+                <option value="color-dodge">Subexposição</option>
+                <option value="hard-light">Luz Dura</option>
+                <option value="soft-light">Luz Suave</option>
+                <option value="hue">Matiz</option>
+                <option value="saturation">Saturação</option>
+                <option value="color">Cor</option>
+                <option value="luminosity">Luminosidade</option>
+              </select>
+            </label>
+          </div>
+
           <ul id="listaCamadas"></ul>
         </section>
       </aside>
     </div>
 
-    <!-- Barra Inferior: Animação FBF 🎬 -->
+    <!-- Timeline -->
     <footer id="timeline-bar">
       <div class="playback-controls">
         <button id="btnPlayPause">▶️ Play</button>
-        <label>FPS: <input type="number" id="inputFPS" value="12" min="1" max="60"></label>
+        <label>FPS: <input type="number" id="inputFPS" value="12" min="1" max="60" style="width: 45px;"></label>
         <label><input type="checkbox" id="chkLoop" checked> Loop</label>
         <label><input type="checkbox" id="chkCascaCebola"> Casca de Cebola</label>
       </div>
@@ -245,4 +233,13 @@
         <button id="btnAddFrameDir">+ Frame ➡️</button>
         <button id="btnAddFrameEsq">⬅️ + Frame</button>
         <button id="btnDuplicarFrame">📋 Duplicar Frame</button>
-        <button id="btnExcluirFrame">🗑️ Excluir Frame
+        <button id="btnExcluirFrame">🗑️ Excluir Frame</button>
+      </div>
+
+      <div id="timeline-frames-container"></div>
+    </footer>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
