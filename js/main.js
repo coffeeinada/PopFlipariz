@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal (Com Controles Completos)
+ * PopFlipariz - Ponto de Entrada Principal (Com Sistema de Paletas Completo)
  * Caminho: js/main.js
  */
 
@@ -9,6 +9,7 @@ import { AnimationManager } from './core/animacao.js';
 import { inicializarSistemaAntiPerda } from './core/anti-perda.js';
 
 import { ColorManager } from './tools/cores.js';
+import { PaletteManager } from './tools/paletas.js';
 import { PincelTool, inicializarPincel } from './tools/pincel.js';
 import { FloodFillTool } from './tools/balde.js';
 import { FormasTool } from './tools/formas.js';
@@ -36,11 +37,13 @@ function iniciarPopFlipariz() {
     const animationManager = new AnimationManager(layerManager, historyManager);
     inicializarSistemaAntiPerda();
 
-    // 2. Ferramentas
+    // 2. Ferramentas e Gestores
     let canvasAtivo = layerManager.obterCanvasAtivo();
     let ctxAtivo = layerManager.obterCtxAtivo();
 
     const colorManager = new ColorManager(canvasAtivo, ctxAtivo);
+    const paletteManager = new PaletteManager(colorManager);
+
     let pincelEngine = inicializarPincel(canvasAtivo, historyManager, colorManager);
     const baldeTool = new FloodFillTool(layerManager, historyManager, colorManager);
     const formasTool = new FormasTool(layerManager, historyManager, colorManager);
@@ -132,6 +135,127 @@ function iniciarPopFlipariz() {
       }
     });
 
+    // --- RENDERIZAÇÃO E GESTÃO DA UI DE PALETAS DE CORES ---
+    const selectPaleta = document.getElementById('selectPaleta');
+    const containerCoresPaleta = document.getElementById('paleta-cores-container');
+    const pickerCor = document.getElementById('pickerCorPrimaria');
+
+    function renderizarPaletasUI() {
+      if (!selectPaleta || !containerCoresPaleta) return;
+
+      // 1. Atualizar dropdown de paletas
+      selectPaleta.innerHTML = '';
+      paletteManager.paletas.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.innerText = p.nome;
+        if (p.id === paletteManager.paletaAtivaId) opt.selected = true;
+        selectPaleta.appendChild(opt);
+      });
+
+      // 2. Renderizar swatches de cor da paleta ativa
+      containerCoresPaleta.innerHTML = '';
+      const paletaAtiva = paletteManager.obterPaletaAtiva();
+
+      paletaAtiva.cores.forEach((corHex, idx) => {
+        const swatch = document.createElement('div');
+        swatch.style.width = '24px';
+        swatch.style.height = '24px';
+        swatch.style.backgroundColor = corHex;
+        swatch.style.borderRadius = '4px';
+        swatch.style.cursor = 'pointer';
+        swatch.style.border = paletteManager.indiceCorSelecionada === idx ? '2px solid #fff' : '1px solid #444';
+        swatch.title = corHex;
+
+        // Clicar na cor define-a como cor primária atual e seleciona-a para substituição/remoção
+        swatch.onclick = () => {
+          paletteManager.indiceCorSelecionada = idx;
+          colorManager.setCorPrimaria(corHex);
+          renderizarPaletasUI();
+        };
+
+        containerCoresPaleta.appendChild(swatch);
+      });
+    }
+
+    if (selectPaleta) {
+      selectPaleta.onchange = (e) => {
+        paletteManager.mudarPaleta(e.target.value);
+        renderizarPaletasUI();
+      };
+    }
+
+    // Botões de Gestão de Paleta
+    ligarBotao('btnNovaPaleta', () => {
+      const nome = prompt('Nome da nova paleta de cores:', 'Minha Paleta 💖');
+      if (nome !== null) {
+        paletteManager.criarPaleta(nome);
+        renderizarPaletasUI();
+      }
+    });
+
+    ligarBotao('btnExcluirPaleta', () => {
+      const paleta = paletteManager.obterPaletaAtiva();
+      if (confirm(`Tens a certeza que pretendes excluir a paleta "${paleta.nome}"?`)) {
+        paletteManager.excluirPaletaAtiva();
+        renderizarPaletasUI();
+      }
+    });
+
+    // Ações de Cores na Paleta
+    ligarBotao('btnAddCorPaleta', () => {
+      paletteManager.adicionarCorAtual();
+      renderizarPaletasUI();
+    });
+
+    ligarBotao('btnSubstituirCor', () => {
+      paletteManager.substituirCorSelecionada();
+      renderizarPaletasUI();
+    });
+
+    ligarBotao('btnRemoverCor', () => {
+      paletteManager.removerCorSelecionada();
+      renderizarPaletasUI();
+    });
+
+    // Exportar e Importar Paletas
+    ligarBotao('btnExportarPaletas', () => {
+      paletteManager.exportarPaletas();
+    });
+
+    const inputImportarPaletas = document.getElementById('inputImportarPaletas');
+    ligarBotao('btnImportarPaletas', () => {
+      if (inputImportarPaletas) inputImportarPaletas.click();
+    });
+
+    if (inputImportarPaletas) {
+      inputImportarPaletas.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const sucesso = paletteManager.importarPaletas(evt.target.result);
+          if (sucesso) {
+            renderizarPaletasUI();
+            alert('Paletas importadas com sucesso!');
+          }
+        };
+        reader.readAsText(file);
+        inputImportarPaletas.value = '';
+      };
+    }
+
+    // Seletor de Cores Primárias
+    if (pickerCor) {
+      pickerCor.oninput = (e) => colorManager.setCorPrimaria(e.target.value);
+      colorManager.aoMudarCorPrimaria = (cor) => { pickerCor.value = cor; };
+    }
+
+    ligarBotao('btnTrocarCores', () => colorManager.inverterCores());
+
+    // Inicialização da UI de Paletas
+    renderizarPaletasUI();
+
     // Ligações dos Controlos do Pincel
     const inputTamanho = document.getElementById('inputTamanho');
     if (inputTamanho) {
@@ -210,16 +334,6 @@ function iniciarPopFlipariz() {
     ligarBotao('btnZoomIn', () => zoomTool.zoomIn());
     ligarBotao('btnZoomOut', () => zoomTool.zoomOut());
     ligarBotao('btnZoomReset', () => zoomTool.resetZoom());
-
-    // Seletor de Cores
-    const pickerCor = document.getElementById('pickerCorPrimaria');
-    if (pickerCor) {
-      pickerCor.oninput = (e) => colorManager.setCorPrimaria(e.target.value);
-      colorManager.aoMudarCorPrimaria = (cor) => { pickerCor.value = cor; };
-    }
-
-    ligarBotao('btnTrocarCores', () => colorManager.inverterCores());
-    ligarBotao('btnContaGotas', () => colorManager.ativarContaGotas(true));
 
     // Timeline e Animação
     ligarBotao('btnPlayPause', () => {
