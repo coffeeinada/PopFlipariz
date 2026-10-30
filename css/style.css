@@ -1,148 +1,55 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  user-select: none;
-}
-
-body, html {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #1e1e24;
-  color: #f0f0f0;
-}
-
-#app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-#top-bar {
-  height: 45px;
-  background-color: #2b2b36;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 15px;
-  border-bottom: 1px solid #3f3f4e;
-}
-
-.top-controls {
-  display: flex;
-  gap: 15px;
-}
-
-.group {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-#main-workspace {
-  flex: 1;
-  display: flex;
-  position: relative;
-  overflow: hidden;
-}
-
+/* Garante que a barra lateral de ferramentas tem scroll vertical se os painéis excederem a altura do ecrã */
 #toolbar {
-  width: 180px;
-  background-color: #252530;
-  padding: 10px;
+  width: 260px;
+  background: #1e1e28;
+  border-right: 1px solid #333;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border-right: 1px solid #3f3f4e;
+  padding: 10px;
+  overflow-y: auto; /* CRUCIAL para aceder a todos os painéis de propriedades sem cortar */
+  max-height: calc(100vh - 50px);
+  box-sizing: border-box;
 }
 
-button {
-  background-color: #383848;
-  color: white;
+#toolbar hr {
   border: none;
-  padding: 6px 10px;
+  border-top: 1px solid #333;
+  margin: 4px 0;
+}
+
+/* Estilo geral para inputs e selects dentro dos painéis */
+#toolbar input[type="number"],
+#toolbar select {
+  background: #252530;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 3px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+#toolbar button {
+  background: #2a2a38;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 5px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 11px;
   transition: background 0.2s;
 }
 
-button:hover {
-  background-color: #4f4f66;
-}
-
-button.active {
-  background-color: #ff69b4;
-  color: #fff;
+#toolbar button:hover {
+  background: #ff69b4;
+  border-color: #ff69b4;
+  color: #000;
   font-weight: bold;
 }
 
-#viewport {
-  flex: 1;
-  background-color: #121216;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-#canvas-container {
-  width: 1280px;
-  height: 720px;
-  position: relative;
-  box-shadow: 0 0 20px rgba(0,0,0,0.8);
-  background-color: #ffffff;
-  transform-origin: center center;
-}
-
-#right-panel {
-  width: 240px;
-  background-color: #252530;
-  border-left: 1px solid #3f3f4e;
-  padding: 10px;
-}
-
-#timeline-bar {
-  height: 100px;
-  background-color: #2b2b36;
-  border-top: 1px solid #3f3f4e;
-  display: flex;
-  flex-direction: column;
-  padding: 5px 15px;
-  gap: 5px;
-}
-
-.playback-controls, .frame-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#timeline-frames-container {
-  flex: 1;
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.frame-thumb {
-  width: 60px;
-  height: 40px;
-  background-color: #383848;
-  border: 2px solid transparent;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.frame-thumb.active {
-  border-color: #ff69b4;
-  background-color: #523043;
+#toolbar button.active {
+  background: #ff69b4;
+  color: #000;
+  font-weight: bold;
+  border-color: #ff1493;
 }
