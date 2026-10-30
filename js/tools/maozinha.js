@@ -1,108 +1,80 @@
 /**
- * PopFlipariz - Área de Mãozinha (Navegação, Pan e Rotação do Ecrã)
+ * PopFlipariz - Ferramenta de Movimentação (Pan) e Rotação da Tela
  * Caminho: js/tools/maozinha.js
- * Ícone de referência: 🤚 (Mãozinha)
  */
 
 export class HandTool {
-  constructor(containerElement, canvasContainer) {
-    this.container = containerElement; // Elemento workspace geral
-    this.canvasContainer = canvasContainer; // O contentor que envolve o canvas
-    
+  constructor(viewport, canvasContainer) {
+    this.viewport = viewport;
+    this.canvasContainer = canvasContainer;
+    this.ativo = false;
     this.isDragging = false;
     this.startX = 0;
     this.startY = 0;
     
+    // Estado de Transformação do Workspace (Pan, Zoom preservado, Rotação em graus)
     this.panX = 0;
     this.panY = 0;
     this.zoom = 1.0;
-    this.rotacaoGraus = 0; // Rotação livre ou em passos de 15°
-    
-    this.espacoPressionado = false;
-    this.ativo = false;
+    this.rotacao = 0;
 
-    this.inicializarEventos();
+    this.initEvents();
   }
 
-  inicializarEventos() {
-    // Atalho de teclado: manter a tecla Espaço premida ativa temporariamente a mãozinha no PC[cite: 1]
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !this.espacoPressionado && document.activeElement.tagName !== 'INPUT') {
-        this.espacoPressionado = true;
-        this.ativo = true;
-        this.canvasContainer.style.cursor = 'grab';
-      }
-    });
+  setAtivo(ativo) {
+    this.ativo = !!ativo;
+    if (this.viewport) {
+      this.viewport.style.cursor = this.ativo ? 'grab' : 'default';
+    }
+  }
 
-    window.addEventListener('keyup', (e) => {
-      if (e.code === 'Space') {
-        this.espacoPressionado = false;
-        this.ativo = false;
-        this.canvasContainer.style.cursor = 'default';
-      }
-    });
+  setZoom(z) {
+    this.zoom = z;
+    this.aplicarTransformacao();
+  }
 
-    // Eventos de arrastar para mover o ecrã (Pan)[cite: 1]
-    this.canvasContainer.addEventListener('mousedown', (e) => {
-      if (this.ativo || e.button === 1) { // Botão central do rato ou ferramenta ativa
-        this.isDragging = true;
-        this.startX = e.clientX - this.panX;
-        this.startY = e.clientY - this.panY;
-        this.canvasContainer.style.cursor = 'grabbing';
-        e.preventDefault();
-      }
+  girar(angulo) {
+    this.rotacao = (this.rotacao + angulo) % 360;
+    this.aplicarTransformacao();
+  }
+
+  resetarRotacao() {
+    this.rotacao = 0;
+    this.aplicarTransformacao();
+  }
+
+  aplicarTransformacao() {
+    if (!this.canvasContainer) return;
+    this.canvasContainer.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom}) rotate(${this.rotacao}deg)`;
+  }
+
+  initEvents() {
+    if (!this.viewport) return;
+
+    this.viewport.addEventListener('mousedown', (e) => {
+      if (!this.ativo) return;
+      this.isDragging = true;
+      this.startX = e.clientX - this.panX;
+      this.startY = e.clientY - this.panY;
+      this.viewport.style.cursor = 'grabbing';
+      e.preventDefault();
+      e.stopPropagation();
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!this.isDragging) return;
+      if (!this.ativo || !this.isDragging) return;
       this.panX = e.clientX - this.startX;
       this.panY = e.clientY - this.startY;
-      this.atualizarTransformacaoVisual();
+      this.aplicarTransformacao();
     });
 
     window.addEventListener('mouseup', () => {
       if (this.isDragging) {
         this.isDragging = false;
-        this.canvasContainer.style.cursor = this.ativo ? 'grab' : 'default';
+        if (this.ativo && this.viewport) {
+          this.viewport.style.cursor = 'grab';
+        }
       }
     });
-  }
-
-  atualizarTransformacaoVisual() {
-    this.canvasContainer.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom}) rotate(${this.rotacaoGraus}deg)`;
-  }
-
-  // Encaixar (para ver de longe)[cite: 1]
-  encaixarNaTela() {
-    this.panX = 0;
-    this.panY = 0;
-    this.zoom = 0.75; // Afasta para dar vista geral
-    this.rotacaoGraus = 0;
-    this.atualizarTransformacaoVisual();
-  }
-
-  // Restaurar tamanho e posição original[cite: 1]
-  restaurarOriginal() {
-    this.panX = 0;
-    this.panY = 0;
-    this.zoom = 1.0;
-    this.rotacaoGraus = 0;
-    this.atualizarTransformacaoVisual();
-  }
-
-  // Girar o ecrã para a direita ou esquerda (em passos de 15 em 15 ou valor personalizado)[cite: 1]
-  girar(graus) {
-    this.rotacaoGraus += parseFloat(graus) || 0;
-    this.atualizarTransformacaoVisual();
-  }
-
-  setRotacaoExata(graus) {
-    this.rotacaoGraus = parseFloat(graus) || 0;
-    this.atualizarTransformacaoVisual();
-  }
-
-  setAtivo(estado) {
-    this.ativo = !!estado;
-    this.canvasContainer.style.cursor = this.ativo ? 'grab' : 'default';
   }
 }
