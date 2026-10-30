@@ -151,6 +151,14 @@ body, html {
   background: #2f2f3f;
 }
 
+/* Estilos específicos para os novos painéis de Seleção e Transformação */
+#panelSelecao, #panelTransformar, #panelPontoFuga {
+  background: #232330;
+  border: 1px solid #3a3a4a;
+  padding: 8px;
+  border-radius: 5px;
+}
+
 #timeline-bar {
   height: 50px;
   background: #1a1a24;
