@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal (Corrigido e Blindado)
+ * PopFlipariz - Ponto de Entrada Principal (Completo e Integrado)
  * Caminho: js/main.js
  */
 
@@ -31,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Núcleos
     const historyManager = new HistoryManager();
     const layerManager = new LayerManager(canvasContainer, 1280, 720, historyManager);
+    
+    // Vincula o layerManager ao historyManager para evitar erros de referência no arranque
+    historyManager.definirLayerManager(layerManager);
+
     const animationManager = new AnimationManager(layerManager, historyManager);
     
     inicializarSistemaAntiPerda();
