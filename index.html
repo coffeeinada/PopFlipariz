@@ -24,10 +24,13 @@
           <button id="btnRefazer" title="Refazer (Ctrl+Y)">↪️</button>
         </div>
 
+        <!-- Controles de Zoom e Rotação 🔍🔄 -->
         <div class="group">
           <button id="btnZoomIn" title="Zoom In (I)">🔍+</button>
           <button id="btnZoomOut" title="Zoom Out (O)">🔍-</button>
           <button id="btnZoomReset" title="Restaurar Zoom">100%</button>
+          <button id="btnGirarEsq" title="Girar Tela Esquerda (-15°)">↺ -15°</button>
+          <button id="btnGirarDir" title="Girar Tela Direita (+15°)">↻ +15°</button>
         </div>
       </div>
     </header>
@@ -40,11 +43,8 @@
         <button id="btnBalde" title="Balde de Tinta">🪣 Balde</button>
         <button id="btnFormas" title="Formas Geométricas">⭕ Formas</button>
         <button id="btnSelecao" title="Laço de Seleção">🤠 Seleção</button>
-
-        <!-- NOVO BOTAO: Ferramenta de Transformação Livre -->
         <button id="btnTransformar" title="Transformar Seleção/Conteúdo">🔲 Transformar</button>
-
-        <button id="btnMaozinha" title="Mãozinha / Pan (Espaço)">🤚 Mãozinha</button>
+        <button id="btnMaozinha" title="Mover / Pan (Espaço)">🤚 Mover</button>
         <button id="btnPontoFuga" title="Ponto de Fuga & Grade">📐 Ponto de Fuga</button>
         
         <hr>
@@ -81,7 +81,7 @@
 
         <hr>
 
-        <!-- PAINEL DE SELEÇÃO 🤠 -->
+        <!-- Painel Seleção -->
         <div id="panelSelecao" class="selecao-section" style="display: none; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">🤠 Definições de Seleção</span>
           <label>Modo de Seleção:
@@ -93,15 +93,6 @@
               <option value="balde_selecao">Balde de Seleção (Varinha)</option>
             </select>
           </label>
-
-          <label id="containerAmostragemSelecao" style="display: none;">Amostragem do Balde:
-            <select id="selectAmostragemSelecao" style="width: 100%;">
-              <option value="todas">Tudo (Todas as Camadas)</option>
-              <option value="atual">Camada Atual</option>
-              <option value="mesma_cor">Da Mesma Cor</option>
-            </select>
-          </label>
-
           <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
             <button id="btnSelecionarTudo" style="flex: 1 1 45%;">🔲 Tudo</button>
             <button id="btnInverterSelecao" style="flex: 1 1 45%;">🔄 Inverter</button>
@@ -110,7 +101,7 @@
           </div>
         </div>
 
-        <!-- PAINEL DE TRANSFORMAÇÃO 🔲 -->
+        <!-- Painel Transformar -->
         <div id="panelTransformar" class="transformar-section" style="display: none; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">🔲 Transformação de Conteúdo</span>
           <label>Modo:
