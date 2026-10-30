@@ -68,8 +68,9 @@ function iniciarPopFlipariz() {
       }
     }
 
-    // Interceção de cliques no workspace
+    // Interceção de cliques no workspace (Respeita se a ferramenta ativa for Mover)
     canvasContainer.addEventListener('mousedown', (e) => {
+      if (ferramentaAtual === 'maozinha') return; // Mover não desenha nada na tela!
       atualizarReferenciaCanvasAtivo();
       if (ferramentaAtual === 'balde') {
         baldeTool.executar(e);
@@ -85,6 +86,7 @@ function iniciarPopFlipariz() {
     });
 
     canvasContainer.addEventListener('mousemove', (e) => {
+      if (ferramentaAtual === 'maozinha') return;
       if (ferramentaAtual === 'formas') {
         formasTool.mover(e);
       } else if (ferramentaAtual === 'selecao') {
@@ -97,6 +99,7 @@ function iniciarPopFlipariz() {
     });
 
     canvasContainer.addEventListener('mouseup', (e) => {
+      if (ferramentaAtual === 'maozinha') return;
       if (ferramentaAtual === 'formas') {
         formasTool.soltar();
       } else if (ferramentaAtual === 'selecao') {
@@ -121,6 +124,10 @@ function iniciarPopFlipariz() {
       document.getElementById('panelSelecao').style.display = (nomeFerramenta === 'selecao') ? 'flex' : 'none';
       document.getElementById('panelTransformar').style.display = (nomeFerramenta === 'transformar') ? 'flex' : 'none';
 
+      if (typeof maozinhaTool.setAtivo === 'function') {
+        maozinhaTool.setAtivo(nomeFerramenta === 'maozinha');
+      }
+
       if (nomeFerramenta === 'transformar') {
         transformTool.iniciarTransformacao();
       }
@@ -132,22 +139,26 @@ function iniciarPopFlipariz() {
     ligarBotao('btnFormas', () => ativarBotaoFerramenta('btnFormas', 'formas'));
     ligarBotao('btnSelecao', () => ativarBotaoFerramenta('btnSelecao', 'selecao'));
     ligarBotao('btnTransformar', () => ativarBotaoFerramenta('btnTransformar', 'transformar'));
-    ligarBotao('btnMaozinha', () => { ativarBotaoFerramenta('btnMaozinha', 'maozinha'); if (typeof maozinhaTool.setAtivo === 'function') maozinhaTool.setAtivo(true); });
+    ligarBotao('btnMaozinha', () => ativarBotaoFerramenta('btnMaozinha', 'maozinha'));
     ligarBotao('btnPontoFuga', () => ativarBotaoFerramenta('btnPontoFuga', 'pontofuga'));
 
-    // Ações do Painel de Seleção
+    // Botões de Rotação da Tela (±15°)
+    ligarBotao('btnGirarEsq', () => maozinhaTool.girar(-15));
+    ligarBotao('btnGirarDir', () => maozinhaTool.girar(15));
+
+    // Ações de Seleção
     document.getElementById('selectModoSelecao')?.addEventListener('change', (e) => selecaoTool.setModo(e.target.value));
     ligarBotao('btnSelecionarTudo', () => selecaoTool.selecionarTudo());
     ligarBotao('btnInverterSelecao', () => selecaoTool.inverterSelecao());
     ligarBotao('btnLimparSelecao', () => selecaoTool.limparSelecao());
     ligarBotao('btnPreencherSelecao', () => selecaoTool.preencherSelecao());
 
-    // Ações do Painel de Transformação
+    // Ações de Transformação
     document.getElementById('selectModoTransformacao')?.addEventListener('change', (e) => transformTool.setModo(e.target.value));
     ligarBotao('btnAplicarTransformacao', () => transformTool.aplicarTransformacao());
     ligarBotao('btnCancelarTransformacao', () => transformTool.cancelarTransformacao());
 
-    // Atalhos Globais e Camadas...
+    // Atalhos Globais
     document.addEventListener('keydown', (e) => {
       const tagAtiva = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (tagAtiva === 'input' || tagAtiva === 'textarea' || tagAtiva === 'select') return;
@@ -226,7 +237,7 @@ function iniciarPopFlipariz() {
     ligarBotao('btnTrocarCores', () => colorManager.inverterCores());
     renderizarPaletasUI();
 
-    // Outros inputs
+    // Outros inputs de pincel, borracha, balde, formas...
     document.getElementById('inputTamanho')?.addEventListener('input', (e) => pincelEngine?.setTamanho(e.target.value));
     document.getElementById('inputOpacidade')?.addEventListener('input', (e) => pincelEngine?.setOpacidade(e.target.value));
     document.getElementById('inputEstabilizador')?.addEventListener('input', (e) => pincelEngine?.setEstabilizador(e.target.value));
