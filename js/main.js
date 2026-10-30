@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal (Completo e Integrado)
+ * PopFlipariz - Ponto de Entrada Principal (Compatível com Módulos e DOM Pronto)
  * Caminho: js/main.js
  */
 
@@ -18,7 +18,7 @@ import { ZoomTool } from './tools/zoom.js';
 import { HistoryTool } from './tools/historico.js';
 import { FileTool } from './tools/arquivo.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+function iniciarPopFlipariz() {
   try {
     const canvasContainer = document.getElementById('canvas-container');
     const viewport = document.getElementById('viewport');
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyManager = new HistoryManager();
     const layerManager = new LayerManager(canvasContainer, 1280, 720, historyManager);
     
-    // Vincula o layerManager ao historyManager para evitar erros de referência no arranque
+    // Vincula o layerManager ao historyManager para evitar erros de referência
     historyManager.definirLayerManager(layerManager);
 
     const animationManager = new AnimationManager(layerManager, historyManager);
@@ -208,9 +208,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderizarTimeline();
     layerManager.atualizarUIlistaCamadas();
-    console.log('PopFlipariz carregado com sucesso!');
+    console.log('PopFlipariz carregado e ativo com sucesso!');
 
   } catch (erro) {
     console.error('Erro fatal ao iniciar o PopFlipariz:', erro);
   }
-});
+}
+
+// Executa imediatamente se o DOM já estiver pronto, senão aguarda o evento
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciarPopFlipariz);
+} else {
+  iniciarPopFlipariz();
+}
