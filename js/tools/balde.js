@@ -1,7 +1,6 @@
 /**
- * PopFlipariz - Área de Balde de Tinta (Flood Fill Completo)
+ * PopFlipariz - Ferramenta de Balde de Tinta (Flood Fill Avançado)
  * Caminho: js/tools/balde.js
- * Ícone de referência: 🪣 (Balde de Tinta)
  */
 
 export class FloodFillTool {
@@ -10,139 +9,160 @@ export class FloodFillTool {
     this.historyManager = historyManager;
     this.colorManager = colorManager;
 
-    // Configurações padrão conforme os requisitos
-    this.opacidade = 1.0; // Opacidade com suporte a decimais
-    this.tolerancia = 0; // Tolerância de 0 a 255
-    this.expandir = 0; // Expandir de 0 a 7 (com suporte a números quebrados)
-    this.amostragem = 'camada_atual'; // 'camada_atual', 'todas_as_camadas', 'mesma_cor', 'acima'
-    this.adjacente = true; // Modo adjacente ativado por padrão
-    this.modoBorracha = false; // Modo borracha no balde de tinta
+    // Definições do Balde
+    this.opacidade = 1.0;
+    this.tolerancia = 32;
+    this.expandir = 0.0; // De 0 a 7 (aceita decimais)
+    this.amostragem = 'atual'; // 'atual' ou 'todas'
+    this.modoBorracha = false;
+  }
+
+  setOpacidade(val) { this.opacidade = Math.max(0.01, Math.min(1.0, parseFloat(val) || 1.0)); }
+  setTolerancia(val) { this.tolerancia = Math.max(0, Math.min(255, parseInt(val) || 0)); }
+  setExpandir(val) { this.expandir = Math.max(0.0, Math.min(7.0, parseFloat(val) || 0.0)); }
+  setAmostragem(val) { this.amostragem = val || 'atual'; }
+  setModoBorracha(ativo) { this.modoBorracha = !!ativo; }
+
+  hexParaRgba(hex) {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    return [(num >> 16) & 255, (num >> 8) & 255, num & 255, Math.round(this.opacidade * 255)];
   }
 
   executar(e) {
     const canvasAtivo = this.layerManager.obterCanvasAtivo();
-    const ctxAtivo = this.layerManager.obterCtxAtivo();
+    if (!canvasAtivo) return;
+
+    const rect = canvasAtivo.getBoundingClientRect();
+    const xClick = Math.floor((e.clientX - rect.left) * (canvasAtivo.width / rect.width));
+    const yClick = Math.floor((e.clientY - rect.top) * (canvasAtivo.height / rect.height));
+
+    if (xClick < 0 || yClick < 0 || xClick >= canvasAtivo.width || yClick >= canvasAtivo.height) return;
+
+    const ctxAtivo = canvasAtivo.getContext('2d', { willReadFrequently: true });
     const largura = canvasAtivo.width;
     const altura = canvasAtivo.height;
 
-    const rect = canvasAtivo.getBoundingClientRect();
-    const escalaX = largura / rect.width;
-    const escalaY = altura / rect.height;
-
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-    const startX = Math.floor((clientX - rect.left) * escalaX);
-    const startY = Math.floor((clientY - rect.top) * escalaY);
-
-    if (startX < 0 || startX >= largura || startY < 0 || startY >= altura) return;
-
-    let imgData = ctxAtivo.getImageData(0, 0, largura, altura);
-    let data = imgData.data;
-
-    const startIndex = (startY * largura + startX) * 4;
-    const startR = data[startIndex];
-    const startG = data[startIndex + 1];
-    const startB = data[startIndex + 2];
-    const startA = data[startIndex + 3];
-
-    // Definir cor alvo (Preenchimento ou Modo Borracha)
-    let targetR, targetG, targetB, targetA;
-    if (this.modoBorracha) {
-      targetR = 0; targetG = 0; targetB = 0; targetA = 0;
+    // Obtém dados da imagem alvo com base na amostragem escolhida
+    let imgDataAlvo;
+    if (this.amostragem === 'todas') {
+      // Cria um canvas temporário composto por todas as camadas visíveis
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = largura;
+      tempCanvas.height = altura;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      this.layerManager.camadas.forEach(l => {
+        if (l.visivel) {
+          tempCtx.globalAlpha = l.opacidade;
+          tempCtx.drawImage(l.canvas, 0, 0);
+        }
+      });
+      imgDataAlvo = tempCtx.getImageData(0, 0, largura, altura);
     } else {
-      const hex = (this.colorManager ? this.colorManager.corPrimaria : '#ff69b4').replace('#', '');
-      targetR = parseInt(hex.substring(0, 2), 16);
-      targetG = parseInt(hex.substring(2, 4), 16);
-      targetB = parseInt(hex.substring(4, 6), 16);
-      // Opacidade com números quebrados aplicada diretamente
-      targetA = Math.floor(parseFloat(this.opacidade) * 255);
+      imgDataAlvo = ctxAtivo.getImageData(0, 0, largura, altura);
     }
 
-    if (!this.modoBorracha && startR === targetR && startG === targetG && startB === targetB && startA === targetA) {
+    const pixels = imgDataAlvo.data;
+    const idxClick = (yClick * largura + xClick) * 4;
+    const corAlvoR = pixels[idxClick];
+    const corAlvoG = pixels[idxClick + 1];
+    const corAlvoB = pixels[idxClick + 2];
+    const corAlvoA = pixels[idxClick + 3];
+
+    const novaCor = this.modoBorracha ? [0, 0, 0, 0] : this.hexParaRgba(this.colorManager.corPrimaria);
+
+    // Evita loop infinito se clicar numa cor idêntica
+    if (
+      Math.abs(corAlvoR - novaCor[0]) <= this.tolerancia &&
+      Math.abs(corAlvoG - novaCor[1]) <= this.tolerancia &&
+      Math.abs(corAlvoB - novaCor[2]) <= this.tolerancia &&
+      Math.abs(corAlvoA - novaCor[3]) <= this.tolerancia
+    ) {
       return;
     }
 
-    // Algoritmo de Flood Fill otimizado
-    const matched = new Uint8Array(largura * altura);
-    const queue = [startY * largura + startX];
-    matched[startY * largura + startX] = 1;
+    // Algoritmo Flood Fill (Queue-based)
+    const visitado = new Uint8Array(largura * altura);
+    const fila = [[xClick, yClick]];
+    const preenchidos = [];
 
-    const corCompativel = (r, g, b, a) => {
-      const dr = Math.abs(r - startR);
-      const dg = Math.abs(g - startG);
-      const db = Math.abs(b - startB);
-      const da = Math.abs(a - startA);
-      return (dr <= this.tolerancia && dg <= this.tolerancia && db <= this.tolerancia && da <= this.tolerancia);
-    };
+    while (fila.length > 0) {
+      const [x, y] = fila.pop();
+      const pos = y * largura + x;
 
-    while (queue.length > 0) {
-      const idx = queue.pop();
-      const x = idx % largura;
-      const y = Math.floor(idx / largura);
+      if (x < 0 || y < 0 || x >= largura || y >= altura) continue;
+      if (visitado[pos]) continue;
+      visitado[pos] = 1;
 
-      const i = idx * 4;
-      data[i] = targetR;
-      data[i + 1] = targetG;
-      data[i + 2] = targetB;
-      data[i + 3] = targetA;
+      const idx = pos * 4;
+      const r = pixels[idx];
+      const g = pixels[idx + 1];
+      const b = pixels[idx + 2];
+      const a = pixels[idx + 3];
 
-      if (this.adjacente) {
-        const vizinhos = [
-          { x: x, y: y - 1 },
-          { x: x, y: y + 1 },
-          { x: x - 1, y: y },
-          { x: x + 1, y: y }
-        ];
+      if (
+        Math.abs(r - corAlvoR) <= this.tolerancia &&
+        Math.abs(g - corAlvoG) <= this.tolerancia &&
+        Math.abs(b - corAlvoB) <= this.tolerancia &&
+        Math.abs(a - corAlvoA) <= this.tolerancia
+      ) {
+        preenchidos.push([x, y]);
+        fila.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+      }
+    }
 
-        for (const v of vizinhos) {
-          if (v.x >= 0 && v.x < largura && v.y >= 0 && v.y < altura) {
-            const vIdx = v.y * largura + v.x;
-            if (!matched[vIdx]) {
-              matched[vIdx] = 1;
-              const vi = vIdx * 4;
-              if (corCompativel(data[vi], data[vi + 1], data[vi + 2], data[vi + 3])) {
-                queue.push(vIdx);
+    if (preenchidos.length === 0) return;
+
+    // Aplica o preenchimento no canvas da camada ativa
+    const imgCamadaAtiva = ctxAtivo.getImageData(0, 0, largura, altura);
+    const pCamada = imgCamadaAtiva.data;
+
+    preenchidos.forEach(([x, y]) => {
+      const idx = (y * largura + x) * 4;
+      if (this.modoBorracha) {
+        pCamada[idx + 3] = 0; // Apaga
+      } else {
+        pCamada[idx] = novaCor[0];
+        pCamada[idx + 1] = novaCor[1];
+        pCamada[idx + 2] = novaCor[2];
+        pCamada[idx + 3] = novaCor[3];
+      }
+    });
+
+    // Se houver "Expandir" (> 0), dilata os pixels preenchidos para cobrir o anti-aliasing
+    if (this.expandir > 0) {
+      const raioExpandir = Math.ceil(this.expandir);
+      const novosPreenchidos = new Set();
+      
+      preenchidos.forEach(([x, y]) => {
+        for (let dx = -raioExpandir; dx <= raioExpandir; dx++) {
+          for (let dy = -raioExpandir; dy <= raioExpandir; dy++) {
+            if (Math.hypot(dx, dy) <= this.expandir) {
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx >= 0 && ny >= 0 && nx < largura && ny < altura) {
+                const nIdx = (ny * largura + nx) * 4;
+                if (this.modoBorracha) {
+                  pCamada[nIdx + 3] = 0;
+                } else {
+                  pCamada[nIdx] = novaCor[0];
+                  pCamada[nIdx + 1] = novaCor[1];
+                  pCamada[nIdx + 2] = novaCor[2];
+                  pCamada[nIdx + 3] = novaCor[3];
+                }
               }
             }
           }
         }
-      } else {
-        // Se adjacente estiver desativado, varre toda a imagem substituindo cores idênticas
-        for (let py = 0; py < altura; py++) {
-          for (let px = 0; px < largura; px++) {
-            const pIdx = py * largura + px;
-            const pi = pIdx * 4;
-            if (corCompativel(data[pi], data[pi + 1], data[pi + 2], data[pi + 3])) {
-              data[pi] = targetR;
-              data[pi + 1] = targetG;
-              data[pi + 2] = targetB;
-              data[pi + 3] = targetA;
-            }
-          }
-        }
-        break;
-      }
+      });
     }
 
-    // Aplicação da regra de "Expandir" (de 0 a 7 com números quebrados se aplicável)
-    const raioExpandir = parseFloat(this.expandir) || 0;
-    if (raioExpandir > 0 && !this.modoBorracha) {
-      // Expansão simples de bordas baseada no raio configurado
-      // (Mantém a performance leve para o laptop)
-    }
+    ctxAtivo.putImageData(imgCamadaAtiva, 0, 0);
 
-    ctxAtivo.putImageData(imgData, 0, 0);
-
-    if (this.historyManager) {
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
       this.historyManager.salvarEstado();
     }
   }
-
-  setOpacidade(valor) { this.opacidade = parseFloat(valor); }
-  setTolerancia(valor) { this.tolerancia = parseInt(valor) || 0; }
-  setExpandir(valor) { this.expandir = parseFloat(valor) || 0; }
-  setAmostragem(tipo) { this.amostragem = tipo; }
-  setAdjacente(ativo) { this.adjacente = !!ativo; }
-  setModoBorracha(ativo) { this.modoBorracha = !!ativo; }
 }
