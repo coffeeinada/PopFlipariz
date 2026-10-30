@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal (Com Camadas Avançadas, Pastas e Ponto de Fuga)
+ * PopFlipariz - Ponto de Entrada Principal
  * Caminho: js/main.js
  */
 
@@ -14,6 +14,7 @@ import { PincelTool, inicializarPincel } from './tools/pincel.js';
 import { FloodFillTool } from './tools/balde.js';
 import { FormasTool } from './tools/formas.js';
 import { SelectionTool } from './tools/selecao.js';
+import { TransformTool } from './tools/transformar.js';
 import { HandTool } from './tools/maozinha.js';
 import { ZoomTool } from './tools/zoom.js';
 import { HistoryTool } from './tools/historico.js';
@@ -47,11 +48,15 @@ function iniciarPopFlipariz() {
     const baldeTool = new FloodFillTool(layerManager, historyManager, colorManager);
     const formasTool = new FormasTool(layerManager, historyManager, colorManager);
     const selecaoTool = new SelectionTool(layerManager, historyManager, colorManager);
+    const transformTool = new TransformTool(layerManager, historyManager);
     const maozinhaTool = new HandTool(viewport, canvasContainer);
     const zoomTool = new ZoomTool(canvasContainer);
     const historyTool = new HistoryTool(historyManager);
     const fileTool = new FileTool(layerManager, historyManager, animationManager);
     const pontoFugaTool = new PontoFugaTool(canvasContainer);
+
+    selecaoTool.inicializarOverlay(canvasContainer);
+    transformTool.inicializarOverlay(canvasContainer);
 
     let ferramentaAtual = 'pincel';
 
@@ -63,13 +68,17 @@ function iniciarPopFlipariz() {
       }
     }
 
-    // Interceção de cliques e movimentos no workspace
+    // Interceção de cliques no workspace
     canvasContainer.addEventListener('mousedown', (e) => {
       atualizarReferenciaCanvasAtivo();
       if (ferramentaAtual === 'balde') {
-        if (typeof baldeTool.executar === 'function') baldeTool.executar(e);
+        baldeTool.executar(e);
       } else if (ferramentaAtual === 'formas') {
         formasTool.iniciar(e);
+      } else if (ferramentaAtual === 'selecao') {
+        selecaoTool.iniciar(e);
+      } else if (ferramentaAtual === 'transformar') {
+        transformTool.iniciarDrag(e);
       } else if (ferramentaAtual === 'pontofuga') {
         pontoFugaTool.atualizarPosicao(e, canvasAtivo);
       }
@@ -78,6 +87,10 @@ function iniciarPopFlipariz() {
     canvasContainer.addEventListener('mousemove', (e) => {
       if (ferramentaAtual === 'formas') {
         formasTool.mover(e);
+      } else if (ferramentaAtual === 'selecao') {
+        selecaoTool.mover(e);
+      } else if (ferramentaAtual === 'transformar') {
+        transformTool.arrastar(e);
       } else if (ferramentaAtual === 'pontofuga' && e.buttons === 1) {
         pontoFugaTool.atualizarPosicao(e, canvasAtivo);
       }
@@ -86,6 +99,10 @@ function iniciarPopFlipariz() {
     canvasContainer.addEventListener('mouseup', (e) => {
       if (ferramentaAtual === 'formas') {
         formasTool.soltar();
+      } else if (ferramentaAtual === 'selecao') {
+        selecaoTool.soltar();
+      } else if (ferramentaAtual === 'transformar') {
+        transformTool.soltarDrag();
       }
     });
 
@@ -100,9 +117,12 @@ function iniciarPopFlipariz() {
       if (btn) btn.classList.add('active');
       ferramentaAtual = nomeFerramenta;
 
-      const painelPF = document.getElementById('panelPontoFuga');
-      if (painelPF) {
-        painelPF.style.display = (nomeFerramenta === 'pontofuga') ? 'flex' : 'none';
+      document.getElementById('panelPontoFuga').style.display = (nomeFerramenta === 'pontofuga') ? 'flex' : 'none';
+      document.getElementById('panelSelecao').style.display = (nomeFerramenta === 'selecao') ? 'flex' : 'none';
+      document.getElementById('panelTransformar').style.display = (nomeFerramenta === 'transformar') ? 'flex' : 'none';
+
+      if (nomeFerramenta === 'transformar') {
+        transformTool.iniciarTransformacao();
       }
     }
 
@@ -111,62 +131,53 @@ function iniciarPopFlipariz() {
     ligarBotao('btnBalde', () => ativarBotaoFerramenta('btnBalde', 'balde'));
     ligarBotao('btnFormas', () => ativarBotaoFerramenta('btnFormas', 'formas'));
     ligarBotao('btnSelecao', () => ativarBotaoFerramenta('btnSelecao', 'selecao'));
+    ligarBotao('btnTransformar', () => ativarBotaoFerramenta('btnTransformar', 'transformar'));
     ligarBotao('btnMaozinha', () => { ativarBotaoFerramenta('btnMaozinha', 'maozinha'); if (typeof maozinhaTool.setAtivo === 'function') maozinhaTool.setAtivo(true); });
     ligarBotao('btnPontoFuga', () => ativarBotaoFerramenta('btnPontoFuga', 'pontofuga'));
 
-    // Atalhos Globais B e E + Atalhos de Camada (Ctrl+C / Ctrl+V)
+    // Ações do Painel de Seleção
+    document.getElementById('selectModoSelecao')?.addEventListener('change', (e) => selecaoTool.setModo(e.target.value));
+    ligarBotao('btnSelecionarTudo', () => selecaoTool.selecionarTudo());
+    ligarBotao('btnInverterSelecao', () => selecaoTool.inverterSelecao());
+    ligarBotao('btnLimparSelecao', () => selecaoTool.limparSelecao());
+    ligarBotao('btnPreencherSelecao', () => selecaoTool.preencherSelecao());
+
+    // Ações do Painel de Transformação
+    document.getElementById('selectModoTransformacao')?.addEventListener('change', (e) => transformTool.setModo(e.target.value));
+    ligarBotao('btnAplicarTransformacao', () => transformTool.aplicarTransformacao());
+    ligarBotao('btnCancelarTransformacao', () => transformTool.cancelarTransformacao());
+
+    // Atalhos Globais e Camadas...
     document.addEventListener('keydown', (e) => {
       const tagAtiva = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (tagAtiva === 'input' || tagAtiva === 'textarea' || tagAtiva === 'select') return;
 
       const tecla = e.key.toLowerCase();
-      if (tecla === 'b') {
-        document.getElementById('btnPincel')?.click();
-      } else if (tecla === 'e') {
-        document.getElementById('btnBorracha')?.click();
-      } else if (e.ctrlKey && tecla === 'c') {
-        e.preventDefault();
-        layerManager.copiarCamadaAtual();
-      } else if (e.ctrlKey && tecla === 'v') {
-        e.preventDefault();
-        layerManager.colarCamada();
-        atualizarReferenciaCanvasAtivo();
-      }
+      if (tecla === 'b') document.getElementById('btnPincel')?.click();
+      else if (tecla === 'e') document.getElementById('btnBorracha')?.click();
+      else if (e.ctrlKey && tecla === 'c') { e.preventDefault(); layerManager.copiarCamadaAtual(); }
+      else if (e.ctrlKey && tecla === 'v') { e.preventDefault(); layerManager.colarCamada(); atualizarReferenciaCanvasAtivo(); }
     });
 
-    // Gestão de Camadas Avançada UI
+    // Camadas UI
     ligarBotao('btnAddCamada', () => { layerManager.adicionarCamada(); atualizarReferenciaCanvasAtivo(); });
-    ligarBotao('btnAddPasta', () => { layerManager.adicionarPasta(); });
+    ligarBotao('btnAddPasta', () => layerManager.adicionarPasta());
     ligarBotao('btnDuplicarCamada', () => { layerManager.duplicarCamada(); atualizarReferenciaCanvasAtivo(); });
     ligarBotao('btnRemoverCamada', () => { layerManager.removerCamada(); atualizarReferenciaCanvasAtivo(); });
     ligarBotao('btnLimparCamada', () => { layerManager.limparCamadaAtual(); atualizarReferenciaCanvasAtivo(); });
     ligarBotao('btnEspelharH', () => { layerManager.espelharHorizontal(); atualizarReferenciaCanvasAtivo(); });
     ligarBotao('btnEspelharV', () => { layerManager.espelharVertical(); atualizarReferenciaCanvasAtivo(); });
 
-    const selectBlendMode = document.getElementById('selectBlendMode');
-    if (selectBlendMode) {
-      selectBlendMode.onchange = (e) => {
-        layerManager.definirModoMesclagemAtual(e.target.value);
-      };
-    }
+    document.getElementById('selectBlendMode')?.addEventListener('change', (e) => layerManager.definirModoMesclagemAtual(e.target.value));
 
-    // Ponto de Fuga & Grade UI
-    const chkAtivarGrade = document.getElementById('chkAtivarGrade');
-    if (chkAtivarGrade) chkAtivarGrade.onchange = (e) => pontoFugaTool.setAtivarGrade(e.target.checked);
+    // Ponto de Fuga UI
+    document.getElementById('chkAtivarGrade')?.addEventListener('change', (e) => pontoFugaTool.setAtivarGrade(e.target.checked));
+    document.getElementById('chkAtivarPontoFuga')?.addEventListener('change', (e) => pontoFugaTool.setAtivarPontoFuga(e.target.checked));
+    document.getElementById('pickerCorGuia')?.addEventListener('input', (e) => pontoFugaTool.setCorGuia(e.target.value));
+    document.getElementById('inputLarguraGuia')?.addEventListener('input', (e) => pontoFugaTool.setLarguraGuia(e.target.value));
+    document.getElementById('inputQtdLinhasFuga')?.addEventListener('input', (e) => pontoFugaTool.setQtdLinhas(e.target.value));
 
-    const chkAtivarPontoFuga = document.getElementById('chkAtivarPontoFuga');
-    if (chkAtivarPontoFuga) chkAtivarPontoFuga.onchange = (e) => pontoFugaTool.setAtivarPontoFuga(e.target.checked);
-
-    const pickerCorGuia = document.getElementById('pickerCorGuia');
-    if (pickerCorGuia) pickerCorGuia.oninput = (e) => pontoFugaTool.setCorGuia(e.target.value);
-
-    const inputLarguraGuia = document.getElementById('inputLarguraGuia');
-    if (inputLarguraGuia) inputLarguraGuia.oninput = (e) => pontoFugaTool.setLarguraGuia(e.target.value);
-
-    const inputQtdLinhasFuga = document.getElementById('inputQtdLinhasFuga');
-    if (inputQtdLinhasFuga) inputQtdLinhasFuga.oninput = (e) => pontoFugaTool.setQtdLinhas(e.target.value);
-
-    // Paletas e cores...
+    // Paletas e cores UI
     const selectPaleta = document.getElementById('selectPaleta');
     const containerCoresPaleta = document.getElementById('paleta-cores-container');
     const pickerCor = document.getElementById('pickerCorPrimaria');
@@ -215,7 +226,7 @@ function iniciarPopFlipariz() {
     ligarBotao('btnTrocarCores', () => colorManager.inverterCores());
     renderizarPaletasUI();
 
-    // Outros inputs (Pincel, Borracha, Balde, Formas, etc.)
+    // Outros inputs
     document.getElementById('inputTamanho')?.addEventListener('input', (e) => pincelEngine?.setTamanho(e.target.value));
     document.getElementById('inputOpacidade')?.addEventListener('input', (e) => pincelEngine?.setOpacidade(e.target.value));
     document.getElementById('inputEstabilizador')?.addEventListener('input', (e) => pincelEngine?.setEstabilizador(e.target.value));
