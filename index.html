@@ -47,12 +47,42 @@
         
         <hr>
 
-        <!-- Área de Cores 🎨 -->
+        <!-- Área de Cores 🎨 (Conta-gotas removido pois já vem no input color nativo) -->
         <div class="color-picker-section">
           <label for="pickerCorPrimaria">Cor Primária</label>
           <input type="color" id="pickerCorPrimaria" value="#ff69b4">
           <button id="btnTrocarCores" title="Trocar Primária/Secundária">🔄 Swap</button>
-          <button id="btnContaGotas" title="Conta-Gotas">🧪</button>
+        </div>
+
+        <hr>
+
+        <!-- Seção de Paleta de Cores 🎨 (Criar, Excluir, Importar/Exportar e Gestão de Cores) -->
+        <div class="palette-section" style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">🎨 Paletas de Cores</span>
+          
+          <div style="display: flex; gap: 4px;">
+            <select id="selectPaleta" style="flex: 1; background: #252530; color: #fff; border: 1px solid #444; padding: 3px; border-radius: 3px;"></select>
+            <button id="btnNovaPaleta" title="Criar Nova Paleta">➕</button>
+            <button id="btnExcluirPaleta" title="Excluir Paleta Atual">🗑️</button>
+          </div>
+
+          <div style="display: flex; gap: 4px;">
+            <button id="btnExportarPaletas" style="flex: 1;">📤 Exportar</button>
+            <button id="btnImportarPaletas" style="flex: 1;">📥 Importar</button>
+            <input type="file" id="inputImportarPaletas" accept=".json" style="display: none;">
+          </div>
+
+          <!-- Contentor das Cores da Paleta Ativa -->
+          <div id="paleta-cores-container" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto; background: #1a1a24; padding: 5px; border-radius: 4px; border: 1px solid #333; min-height: 38px;">
+            <!-- Cores renderizadas dinamicamente -->
+          </div>
+
+          <!-- Ações nas Cores (Criar / Substituir / Excluir) -->
+          <div style="display: flex; gap: 4px;">
+            <button id="btnAddCorPaleta" style="flex: 1;" title="Adicionar cor atual do seletor à paleta">➕ Criar Cor</button>
+            <button id="btnSubstituirCor" style="flex: 1;" title="Substituir cor selecionada pela cor atual">🔄 Substituir</button>
+            <button id="btnRemoverCor" style="flex: 1;" title="Remover cor selecionada">❌ Apagar</button>
+          </div>
         </div>
 
         <hr>
