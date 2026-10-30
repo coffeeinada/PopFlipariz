@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal (Com Controles Completos do Pincel e Atalhos)
+ * PopFlipariz - Ponto de Entrada Principal (Com Controles Completos)
  * Caminho: js/main.js
  */
 
@@ -85,7 +85,7 @@ function iniciarPopFlipariz() {
       }
     });
 
-    // 3. Função segura para ligar cliques a botões da interface
+    // Função segura para ligar cliques a botões da interface
     function ligarBotao(id, callback) {
       const el = document.getElementById(id);
       if (el) el.onclick = callback;
@@ -132,33 +132,46 @@ function iniciarPopFlipariz() {
       }
     });
 
-    // 4. Ligações dos Controlos Avançados do Pincel
+    // Ligações dos Controlos do Pincel
     const inputTamanho = document.getElementById('inputTamanho');
     if (inputTamanho) {
-      inputTamanho.oninput = (e) => {
-        if (pincelEngine) pincelEngine.setTamanho(e.target.value);
-      };
+      inputTamanho.oninput = (e) => { if (pincelEngine) pincelEngine.setTamanho(e.target.value); };
     }
 
     const inputOpacidade = document.getElementById('inputOpacidade');
     if (inputOpacidade) {
-      inputOpacidade.oninput = (e) => {
-        if (pincelEngine) pincelEngine.setOpacidade(e.target.value);
-      };
+      inputOpacidade.oninput = (e) => { if (pincelEngine) pincelEngine.setOpacidade(e.target.value); };
     }
 
     const inputEstabilizador = document.getElementById('inputEstabilizador');
     if (inputEstabilizador) {
-      inputEstabilizador.oninput = (e) => {
-        if (pincelEngine) pincelEngine.setEstabilizador(e.target.value);
-      };
+      inputEstabilizador.oninput = (e) => { if (pincelEngine) pincelEngine.setEstabilizador(e.target.value); };
     }
 
     const selectTipoPincel = document.getElementById('selectTipoPincel');
     if (selectTipoPincel) {
-      selectTipoPincel.onchange = (e) => {
-        if (pincelEngine) pincelEngine.setTipo(e.target.value);
-      };
+      selectTipoPincel.onchange = (e) => { if (pincelEngine) pincelEngine.setTipo(e.target.value); };
+    }
+
+    // Ligações dos Controlos da Borracha
+    const inputTamanhoBorracha = document.getElementById('inputTamanhoBorracha');
+    if (inputTamanhoBorracha) {
+      inputTamanhoBorracha.oninput = (e) => { if (pincelEngine) pincelEngine.setEraserSize(e.target.value); };
+    }
+
+    const inputOpacidadeBorracha = document.getElementById('inputOpacidadeBorracha');
+    if (inputOpacidadeBorracha) {
+      inputOpacidadeBorracha.oninput = (e) => { if (pincelEngine) pincelEngine.setEraserOpacity(e.target.value); };
+    }
+
+    const selectFormaBorracha = document.getElementById('selectFormaBorracha');
+    if (selectFormaBorracha) {
+      selectFormaBorracha.onchange = (e) => { if (pincelEngine) pincelEngine.setEraserShape(e.target.value); };
+    }
+
+    const selectTipoBorracha = document.getElementById('selectTipoBorracha');
+    if (selectTipoBorracha) {
+      selectTipoBorracha.onchange = (e) => { if (pincelEngine) pincelEngine.setEraserType(e.target.value); };
     }
 
     // Gestão de Camadas
