@@ -125,6 +125,34 @@
 
         <hr>
 
+        <!-- Propriedades do Balde de Tinta 🪣 -->
+        <div class="bucket-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">🪣 Definições do Balde</span>
+
+          <label><input type="checkbox" id="chkBaldeBorracha"> Modo Borracha</label>
+
+          <label>Opacidade (0.05 - 1.0): 
+            <input type="number" id="inputBaldeOpacidade" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
+          </label>
+
+          <label>Tolerância (0 - 255): 
+            <input type="number" id="inputBaldeTolerancia" value="32" min="0" max="255" step="1" style="width: 100%;">
+          </label>
+
+          <label>Expandir (0 - 7, aceita decimais): 
+            <input type="number" id="inputBaldeExpandir" value="0.0" min="0.0" max="7.0" step="0.1" style="width: 100%;">
+          </label>
+
+          <label>Amostragem: 
+            <select id="selectBaldeAmostragem" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+              <option value="atual">Camada Atual</option>
+              <option value="todas">Todas as Camadas</option>
+            </select>
+          </label>
+        </div>
+
+        <hr>
+
         <!-- Propriedades Avançadas do Pincel 🖌️ -->
         <div class="brush-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">⚙️ Definições do Pincel</span>
@@ -217,13 +245,4 @@
         <button id="btnAddFrameDir">+ Frame ➡️</button>
         <button id="btnAddFrameEsq">⬅️ + Frame</button>
         <button id="btnDuplicarFrame">📋 Duplicar Frame</button>
-        <button id="btnExcluirFrame">🗑️ Excluir Frame</button>
-      </div>
-
-      <div id="timeline-frames-container"></div>
-    </footer>
-  </div>
-
-  <script type="module" src="js/main.js"></script>
-</body>
-</html>
+        <button id="btnExcluirFrame">🗑️ Excluir Frame
