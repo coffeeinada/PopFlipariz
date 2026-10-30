@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal
+ * PopFlipariz - Ponto de Entrada Principal (Com Atalho de Espaço para Mover)
  * Caminho: js/main.js
  */
 
@@ -59,6 +59,8 @@ function iniciarPopFlipariz() {
     transformTool.inicializarOverlay(canvasContainer);
 
     let ferramentaAtual = 'pincel';
+    let ferramentaAnteriorAntesDoEspaco = null;
+    let espacoPremido = false;
 
     function atualizarReferenciaCanvasAtivo() {
       canvasAtivo = layerManager.obterCanvasAtivo();
@@ -68,9 +70,9 @@ function iniciarPopFlipariz() {
       }
     }
 
-    // Interceção de cliques no workspace (Respeita se a ferramenta ativa for Mover)
+    // Interceção de cliques no workspace
     canvasContainer.addEventListener('mousedown', (e) => {
-      if (ferramentaAtual === 'maozinha') return; // Mover não desenha nada na tela!
+      if (ferramentaAtual === 'maozinha') return;
       atualizarReferenciaCanvasAtivo();
       if (ferramentaAtual === 'balde') {
         baldeTool.executar(e);
@@ -142,32 +144,60 @@ function iniciarPopFlipariz() {
     ligarBotao('btnMaozinha', () => ativarBotaoFerramenta('btnMaozinha', 'maozinha'));
     ligarBotao('btnPontoFuga', () => ativarBotaoFerramenta('btnPontoFuga', 'pontofuga'));
 
-    // Botões de Rotação da Tela (±15°)
     ligarBotao('btnGirarEsq', () => maozinhaTool.girar(-15));
     ligarBotao('btnGirarDir', () => maozinhaTool.girar(15));
 
-    // Ações de Seleção
     document.getElementById('selectModoSelecao')?.addEventListener('change', (e) => selecaoTool.setModo(e.target.value));
     ligarBotao('btnSelecionarTudo', () => selecaoTool.selecionarTudo());
     ligarBotao('btnInverterSelecao', () => selecaoTool.inverterSelecao());
     ligarBotao('btnLimparSelecao', () => selecaoTool.limparSelecao());
     ligarBotao('btnPreencherSelecao', () => selecaoTool.preencherSelecao());
 
-    // Ações de Transformação
     document.getElementById('selectModoTransformacao')?.addEventListener('change', (e) => transformTool.setModo(e.target.value));
     ligarBotao('btnAplicarTransformacao', () => transformTool.aplicarTransformacao());
     ligarBotao('btnCancelarTransformacao', () => transformTool.cancelarTransformacao());
 
-    // Atalhos Globais
+    // --- GESTÃO DE TECLADO (Incluindo Espaço para segurar e Mover) ---
     document.addEventListener('keydown', (e) => {
       const tagAtiva = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (tagAtiva === 'input' || tagAtiva === 'textarea' || tagAtiva === 'select') return;
 
       const tecla = e.key.toLowerCase();
+
+      // Pressionar Espaço ativa temporariamente o modo Mover
+      if (e.code === 'Space' && !espacoPremido) {
+        e.preventDefault();
+        espacoPremido = true;
+        ferramentaAnteriorAntesDoEspaco = ferramentaAtual;
+        ativarBotaoFerramenta('btnMaozinha', 'maozinha');
+        return;
+      }
+
       if (tecla === 'b') document.getElementById('btnPincel')?.click();
       else if (tecla === 'e') document.getElementById('btnBorracha')?.click();
       else if (e.ctrlKey && tecla === 'c') { e.preventDefault(); layerManager.copiarCamadaAtual(); }
       else if (e.ctrlKey && tecla === 'v') { e.preventDefault(); layerManager.colarCamada(); atualizarReferenciaCanvasAtivo(); }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      // Soltar o Espaço restaura a ferramenta anterior automaticamente
+      if (e.code === 'Space' && espacoPremido) {
+        e.preventDefault();
+        espacoPremido = false;
+        if (ferramentaAnteriorAntesDoEspaco) {
+          const mapaBotoes = {
+            'pincel': 'btnPincel',
+            'borracha': 'btnBorracha',
+            'balde': 'btnBalde',
+            'formas': 'btnFormas',
+            'selecao': 'btnSelecao',
+            'transformar': 'btnTransformar',
+            'pontofuga': 'btnPontoFuga'
+          };
+          const idBtn = mapaBotoes[ferramentaAnteriorAntesDoEspaco] || 'btnPincel';
+          ativarBotaoFerramenta(idBtn, ferramentaAnteriorAntesDoEspaco);
+        }
+      }
     });
 
     // Camadas UI
@@ -237,7 +267,7 @@ function iniciarPopFlipariz() {
     ligarBotao('btnTrocarCores', () => colorManager.inverterCores());
     renderizarPaletasUI();
 
-    // Outros inputs de pincel, borracha, balde, formas...
+    // Outros inputs
     document.getElementById('inputTamanho')?.addEventListener('input', (e) => pincelEngine?.setTamanho(e.target.value));
     document.getElementById('inputOpacidade')?.addEventListener('input', (e) => pincelEngine?.setOpacidade(e.target.value));
     document.getElementById('inputEstabilizador')?.addEventListener('input', (e) => pincelEngine?.setEstabilizador(e.target.value));
