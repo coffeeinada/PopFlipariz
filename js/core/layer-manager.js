@@ -1,128 +1,210 @@
 /**
- * PopFlipariz - Gestor de Camadas Completo
+ * PopFlipariz - Gestor Avançado de Camadas e Pastas
  * Caminho: js/core/layer-manager.js
  */
 
 export class LayerManager {
-  constructor(containerElement, largura, altura, historyManager) {
-    this.container = containerElement;
-    this.width = largura;
-    this.height = altura;
+  constructor(canvasContainer, largura = 1280, altura = 720, historyManager = null) {
+    this.container = canvasContainer;
+    this.largura = largura;
+    this.altura = altura;
     this.historyManager = historyManager;
-    
-    this.camadas = [];
-    this.indiceAtivo = 0;
 
-    // Garante que inicia sempre com pelo menos 1 camada criada de imediato
+    this.camadas = [];
+    this.indiceCamadaAtiva = 0;
+    this.clipboardBuffer = null; // Para Ctrl+C / Ctrl+V de camada
+
+    // Cria a primeira camada padrão ao iniciar
     this.adicionarCamada('Camada 1');
   }
 
-  criarCanvasVazio() {
-    const c = document.createElement('canvas');
-    c.width = this.width;
-    c.height = this.height;
-    c.style.position = 'absolute';
-    c.style.top = '0';
-    c.style.left = '0';
-    c.style.width = '100%';
-    c.style.height = '100%';
-    return c;
+  criarCanvasElemento() {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.largura;
+    canvas.height = this.altura;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'auto';
+    return canvas;
   }
 
-  adicionarCamada(nome = `Camada ${this.camadas.length + 1}`) {
-    const canvas = this.criarCanvasVazio();
-    this.container.appendChild(canvas);
+  adicionarCamada(nomePersonalizado = null) {
+    const id = 'layer_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    const nome = nomePersonalizado || `Camada ${this.camadas.length + 1}`;
+    const canvas = this.criarCanvasElemento();
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     const novaCamada = {
-      id: 'layer_' + Date.now() + Math.random(),
-      nome: nome,
-      canvas: canvas,
-      ctx: canvas.getContext('2d'),
+      id,
+      nome,
+      tipo: 'camada',
+      canvas,
+      ctx,
       visivel: true,
-      opacidade: 1.0,
-      blendMode: 'normal'
+      alphaLocked: false,
+      blendMode: 'source-over',
+      opacidade: 1.0
     };
 
     this.camadas.push(novaCamada);
-    this.indiceAtivo = this.camadas.length - 1;
-    this.atualizarZIndex();
+    this.indiceCamadaAtiva = this.camadas.length - 1;
+    this.reorganizarDOMCanvas();
     this.atualizarUIlistaCamadas();
-    
-    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
-      this.historyManager.salvarEstado();
-    }
 
-    return novaCamada;
+    if (this.historyManager) this.historyManager.salvarEstado();
   }
 
-  removerCamada(indice = this.indiceAtivo) {
-    // Regra estrita: O mínimo de camadas será sempre 1
+  adicionarPasta() {
+    const id = 'folder_' + Date.now();
+    const novaPasta = {
+      id,
+      nome: `Pasta ${this.camadas.length + 1}`,
+      tipo: 'pasta',
+      aberta: true,
+      visivel: true
+    };
+    this.camadas.push(novaPasta);
+    this.indiceCamadaAtiva = this.camadas.length - 1;
+    this.atualizarUIlistaCamadas();
+  }
+
+  removerCamada() {
     if (this.camadas.length <= 1) {
-      alert('O projeto precisa de manter pelo menos uma camada!');
+      alert('O projeto precisa de ter pelo menos uma camada!');
       return;
     }
-
-    this.container.removeChild(this.camadas[indice].canvas);
-    this.camadas.splice(indice, 1);
-
-    if (this.indiceAtivo >= this.camadas.length) {
-      this.indiceAtivo = this.camadas.length - 1;
+    const removida = this.camadas.splice(this.indiceCamadaAtiva, 1)[0];
+    if (removida.tipo === 'camada' && removida.canvas) {
+      removida.canvas.remove();
     }
-    
-    this.atualizarZIndex();
+    this.indiceCamadaAtiva = Math.max(0, this.indiceCamadaAtiva - 1);
+    this.reorganizarDOMCanvas();
     this.atualizarUIlistaCamadas();
 
-    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
-      this.historyManager.salvarEstado();
-    }
+    if (this.historyManager) this.historyManager.salvarEstado();
   }
 
-  duplicarCamada(indice = this.indiceAtivo) {
-    const alvo = this.camadas[indice];
-    if (!alvo) return;
+  duplicarCamada() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (!atual || atual.tipo !== 'camada') return;
 
-    const novoCanvas = this.criarCanvasVazio();
-    const novoCtx = novoCanvas.getContext('2d');
-    novoCtx.drawImage(alvo.canvas, 0, 0);
-
-    this.container.appendChild(novoCanvas);
+    const id = 'layer_' + Date.now();
+    const canvas = this.criarCanvasElemento();
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(atual.canvas, 0, 0);
 
     const duplicada = {
-      id: 'layer_' + Date.now(),
-      nome: alvo.nome + ' (Cópia)',
-      canvas: novoCanvas,
-      ctx: novoCtx,
-      visivel: alvo.visivel,
-      opacidade: alvo.opacidade,
-      blendMode: alvo.blendMode
+      id,
+      nome: `${atual.nome} (Cópia)`,
+      tipo: 'camada',
+      canvas,
+      ctx,
+      visivel: atual.visivel,
+      alphaLocked: atual.alphaLocked,
+      blendMode: atual.blendMode,
+      opacidade: atual.opacidade
     };
 
-    this.camadas.splice(indice + 1, 0, duplicada);
-    this.indiceAtivo = indice + 1;
-    this.atualizarZIndex();
+    this.camadas.splice(this.indiceCamadaAtiva + 1, 0, duplicada);
+    this.indiceCamadaAtiva++;
+    this.reorganizarDOMCanvas();
     this.atualizarUIlistaCamadas();
+
+    if (this.historyManager) this.historyManager.salvarEstado();
   }
 
-  limparCamada(indice = this.indiceAtivo) {
-    const camada = this.camadas[indice];
-    if (!camada) return;
-    camada.ctx.clearRect(0, 0, this.width, this.height);
-    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
-      this.historyManager.salvarEstado();
+  limparCamadaAtual() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (!atual || atual.tipo !== 'camada') return;
+    atual.ctx.clearRect(0, 0, this.largura, this.altura);
+    if (this.historyManager) this.historyManager.salvarEstado();
+  }
+
+  espelharHorizontal() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (!atual || atual.tipo !== 'camada') return;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = this.largura;
+    tempCanvas.height = this.altura;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.translate(this.largura, 0);
+    tempCtx.scale(-1, 1);
+    tempCtx.drawImage(atual.canvas, 0, 0);
+
+    atual.ctx.clearRect(0, 0, this.largura, this.altura);
+    atual.ctx.drawImage(tempCanvas, 0, 0);
+    if (this.historyManager) this.historyManager.salvarEstado();
+  }
+
+  espelharVertical() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (!atual || atual.tipo !== 'camada') return;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = this.largura;
+    tempCanvas.height = this.altura;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.translate(0, this.altura);
+    tempCtx.scale(1, -1);
+    tempCtx.drawImage(atual.canvas, 0, 0);
+
+    atual.ctx.clearRect(0, 0, this.largura, this.altura);
+    atual.ctx.drawImage(tempCanvas, 0, 0);
+    if (this.historyManager) this.historyManager.salvarEstado();
+  }
+
+  copiarCamadaAtual() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (!atual || atual.tipo !== 'camada') return;
+    this.clipboardBuffer = atual.ctx.getImageData(0, 0, this.largura, this.altura);
+    console.log('Camada copiada para a área de transferência!');
+  }
+
+  colarCamada() {
+    if (!this.clipboardBuffer) return;
+    this.adicionarCamada('Camada Colada');
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (atual && atual.tipo === 'camada') {
+      atual.ctx.putImageData(this.clipboardBuffer, 0, 0);
+      if (this.historyManager) this.historyManager.salvarEstado();
     }
   }
 
-  atualizarZIndex() {
-    this.camadas.forEach((camada, idx) => {
-      camada.canvas.style.zIndex = idx + 1;
-      camada.canvas.style.opacity = camada.visivel ? camada.opacidade : 0;
-      camada.canvas.style.display = camada.visivel ? 'block' : 'none';
-      
-      // Apenas a camada ativa e visível recebe os cliques do rato para desenho
-      if (idx === this.indiceAtivo && camada.visivel) {
-        camada.canvas.style.pointerEvents = 'auto';
-      } else {
-        camada.canvas.style.pointerEvents = 'none';
+  definirModoMesclagemAtual(mode) {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (atual && atual.tipo === 'camada') {
+      atual.blendMode = mode;
+      atual.ctx.globalCompositeOperation = mode;
+    }
+  }
+
+  toggleAlphaLock() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    if (atual && atual.tipo === 'camada') {
+      atual.alphaLocked = !atual.alphaLocked;
+      this.atualizarUIlistaCamadas();
+    }
+  }
+
+  obterCanvasAtivo() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    return (atual && atual.tipo === 'camada') ? atual.canvas : null;
+  }
+
+  obterCtxAtivo() {
+    const atual = this.camadas[this.indiceCamadaAtiva];
+    return (atual && atual.tipo === 'camada') ? atual.ctx : null;
+  }
+
+  reorganizarDOMCanvas() {
+    this.container.innerHTML = '';
+    // Desenha de baixo para cima (ordem das camadas)
+    this.camadas.forEach(l => {
+      if (l.tipo === 'camada' && l.canvas) {
+        l.canvas.style.display = l.visivel ? 'block' : 'none';
+        this.container.appendChild(l.canvas);
       }
     });
   }
@@ -132,51 +214,68 @@ export class LayerManager {
     if (!lista) return;
     lista.innerHTML = '';
 
-    this.camadas.forEach((camada, idx) => {
+    this.camadas.forEach((l, idx) => {
       const li = document.createElement('li');
-      li.style.display = 'flex';
-      li.style.justifyContent = 'space-between';
-      li.style.alignItems = 'center';
-      li.style.padding = '6px 8px';
-      li.style.margin = '4px 0';
-      li.style.background = idx === this.indiceAtivo ? '#383848' : '#252530';
-      li.style.borderRadius = '4px';
-      li.style.cursor = 'pointer';
+      li.className = `layer-item ${idx === this.indiceCamadaAtiva ? 'active' : ''}`;
 
-      const span = document.createElement('span');
-      span.innerText = camada.nome;
-      span.onclick = () => {
-        this.indiceAtivo = idx;
-        this.atualizarZIndex();
-        this.atualizarUIlistaCamadas();
-      };
+      if (l.tipo === 'pasta') {
+        li.innerHTML = `
+          <span>📁 <strong>${l.nome}</strong></span>
+          <button title="Excluir Pasta">🗑️</button>
+        `;
+        li.querySelector('button').onclick = () => {
+          this.camadas.splice(idx, 1);
+          this.atualizarUIlistaCamadas();
+        };
+      } else {
+        const lockIcon = l.alphaLocked ? '🔒' : '🔓';
+        const visIcon = l.visivel ? '👁️' : '🚫';
 
-      const btnOlho = document.createElement('button');
-      btnOlho.innerText = camada.visivel ? '👁️' : '🚫';
-      btnOlho.style.background = 'transparent';
-      btnOlho.style.border = 'none';
-      btnOlho.style.cursor = 'pointer';
-      btnOlho.onclick = (e) => {
-        e.stopPropagation();
-        camada.visivel = !camada.visivel;
-        this.atualizarZIndex();
-        this.atualizarUIlistaCamadas();
-      };
+        li.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 5px; flex: 1; cursor: pointer;">
+            <button class="btn-vis" title="Visibilidade">${visIcon}</button>
+            <button class="btn-lock" title="Bloqueio Alpha (Lock Alpha)">${lockIcon}</button>
+            <span class="layer-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${l.nome}</span>
+          </div>
+        `;
 
-      li.appendChild(span);
-      li.appendChild(btnOlho);
+        // Clicar na camada para ativá-la
+        li.onclick = (e) => {
+          if (e.target.tagName !== 'BUTTON') {
+            this.indiceCamadaAtiva = idx;
+            this.atualizarUIlistaCamadas();
+          }
+        };
+
+        // Duplo clique para renomear
+        li.querySelector('.layer-name').ondblclick = () => {
+          const novoNome = prompt('Renomear camada:', l.nome);
+          if (novoNome) {
+            l.nome = novoNome.trim();
+            this.atualizarUIlistaCamadas();
+          }
+        };
+
+        // Botão Visibilidade
+        li.querySelector('.btn-vis').onclick = () => {
+          l.visivel = !l.visivel;
+          this.reorganizarDOMCanvas();
+          this.atualizarUIlistaCamadas();
+        };
+
+        // Botão Alpha Lock (🔒 / 🔓)
+        li.querySelector('.btn-lock').onclick = () => {
+          l.alphaLocked = !l.alphaLocked;
+          if (l.alphaLocked) {
+            l.ctx.globalCompositeOperation = 'source-atop';
+          } else {
+            l.ctx.globalCompositeOperation = l.blendMode || 'source-over';
+          }
+          this.atualizarUIlistaCamadas();
+        };
+      }
+
       lista.appendChild(li);
     });
-  }
-
-  obterCanvasAtivo() {
-    if (!this.camadas[this.indiceAtivo]) {
-      this.adicionarCamada();
-    }
-    return this.camadas[this.indiceAtivo].canvas;
-  }
-
-  obterCtxAtivo() {
-    return this.camadas[this.indiceAtivo].ctx;
   }
 }
