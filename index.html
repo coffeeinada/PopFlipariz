@@ -81,6 +81,36 @@
               <option value="borradinho">Borradinho</option>
               <option value="aquarela">Aquarela</option>
               <option value="bico_de_pena">Caneta Bico de Pena</option>
+              <option value="laco">Pincel Laço (Preenchimento)</option>
+            </select>
+          </label>
+        </div>
+
+        <hr>
+
+        <!-- Propriedades Avançadas da Borracha 🧹 -->
+        <div class="eraser-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">🧹 Definições da Borracha</span>
+          
+          <label>Tamanho (0 - 400): 
+            <input type="number" id="inputTamanhoBorracha" value="20" min="0" max="400" step="1" style="width: 100%;">
+          </label>
+
+          <label>Opacidade (0.05 - 1.0): 
+            <input type="number" id="inputOpacidadeBorracha" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
+          </label>
+
+          <label>Forma da Borracha: 
+            <select id="selectFormaBorracha" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+              <option value="round">Redonda</option>
+              <option value="square">Quadrada</option>
+            </select>
+          </label>
+
+          <label>Tipo da Borracha: 
+            <select id="selectTipoBorracha" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+              <option value="normal">Normal (Borda Firme)</option>
+              <option value="soft">Borradinha / Esfumaçada</option>
             </select>
           </label>
         </div>
