@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal
+ * PopFlipariz - Ponto de Entrada Principal (Com Controles Completos do Pincel e Atalhos)
  * Caminho: js/main.js
  */
 
@@ -31,12 +31,9 @@ function iniciarPopFlipariz() {
     // 1. Núcleos
     const historyManager = new HistoryManager();
     const layerManager = new LayerManager(canvasContainer, 1280, 720, historyManager);
-    
-    // Vincula o layerManager ao historyManager para evitar erros de referência
     historyManager.definirLayerManager(layerManager);
 
     const animationManager = new AnimationManager(layerManager, historyManager);
-    
     inicializarSistemaAntiPerda();
 
     // 2. Ferramentas
@@ -63,7 +60,7 @@ function iniciarPopFlipariz() {
       }
     }
 
-    // Interceção de desenho no canvas ativo
+    // Interceção de cliques no canvas ativo (Balde e Formas)
     canvasContainer.addEventListener('mousedown', (e) => {
       atualizarReferenciaCanvasAtivo();
       if (ferramentaAtual === 'balde') {
@@ -119,6 +116,50 @@ function iniciarPopFlipariz() {
       ativarBotaoFerramenta('btnMaozinha', 'maozinha');
       if (typeof maozinhaTool.setAtivo === 'function') maozinhaTool.setAtivo(true);
     });
+
+    // Atalhos Globais de Teclado (B para Pincel, E para Borracha)
+    document.addEventListener('keydown', (e) => {
+      const tagAtiva = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (tagAtiva === 'input' || tagAtiva === 'textarea' || tagAtiva === 'select') return;
+
+      const tecla = e.key.toLowerCase();
+      if (tecla === 'b') {
+        const btnPincel = document.getElementById('btnPincel');
+        if (btnPincel) btnPincel.click();
+      } else if (tecla === 'e') {
+        const btnBorracha = document.getElementById('btnBorracha');
+        if (btnBorracha) btnBorracha.click();
+      }
+    });
+
+    // 4. Ligações dos Controlos Avançados do Pincel
+    const inputTamanho = document.getElementById('inputTamanho');
+    if (inputTamanho) {
+      inputTamanho.oninput = (e) => {
+        if (pincelEngine) pincelEngine.setTamanho(e.target.value);
+      };
+    }
+
+    const inputOpacidade = document.getElementById('inputOpacidade');
+    if (inputOpacidade) {
+      inputOpacidade.oninput = (e) => {
+        if (pincelEngine) pincelEngine.setOpacidade(e.target.value);
+      };
+    }
+
+    const inputEstabilizador = document.getElementById('inputEstabilizador');
+    if (inputEstabilizador) {
+      inputEstabilizador.oninput = (e) => {
+        if (pincelEngine) pincelEngine.setEstabilizador(e.target.value);
+      };
+    }
+
+    const selectTipoPincel = document.getElementById('selectTipoPincel');
+    if (selectTipoPincel) {
+      selectTipoPincel.onchange = (e) => {
+        if (pincelEngine) pincelEngine.setTipo(e.target.value);
+      };
+    }
 
     // Gestão de Camadas
     ligarBotao('btnAddCamada', () => {
@@ -203,7 +244,6 @@ function iniciarPopFlipariz() {
       atualizarReferenciaCanvasAtivo();
     });
 
-    // Controlos adicionais da Timeline (FPS / Loop)
     const inputFPS = document.getElementById('inputFPS');
     if (inputFPS) {
       inputFPS.onchange = (e) => {
@@ -248,7 +288,6 @@ function iniciarPopFlipariz() {
   }
 }
 
-// Executa imediatamente se o DOM já estiver pronto, senão aguarda o evento
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', iniciarPopFlipariz);
 } else {
