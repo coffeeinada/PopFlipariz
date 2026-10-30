@@ -31,7 +31,7 @@ export class HistoryManager {
       if (this.undoStack.length > this.maxStops) {
         this.undoStack.shift();
       }
-      this.redoStack = []; // Limpa o refazer em novas ações
+      this.redoStack = []; // Limpa a pilha de refazer em novas ações
     } catch (e) {
       console.warn('Não foi possível salvar o estado do histórico:', e);
     }
