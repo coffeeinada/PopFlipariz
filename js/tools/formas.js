@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ferramenta de Formas e Linhas Avançada
+ * PopFlipariz - Ferramenta de Formas e Linhas com Pré-visualização e Transformação
  * Caminho: js/tools/formas.js
  */
 
@@ -9,20 +9,32 @@ export class FormasTool {
     this.historyManager = historyManager;
     this.colorManager = colorManager;
 
-    // Definições das Formas
-    this.tipo = 'circulo'; // 'circulo', 'poligono', 'linha', 'curva'
-    this.pontosPoligono = 4; // de 3 a 10 (inclui quadrado)
+    // Definições
+    this.tipo = 'circulo';
+    this.pontosPoligono = 4;
     this.preencher = true;
     this.corPreenchimento = '#ffb6c1';
     this.larguraLinha = 4.0;
     this.opacidade = 1.0;
     this.modoBorracha = false;
 
-    this.desenhando = false;
+    // Estados da ferramenta: 'ocioso' | 'desenhando' | 'transformacao'
+    this.estado = 'ocioso';
     this.startX = 0;
     this.startY = 0;
     this.currentX = 0;
     this.currentY = 0;
+
+    // Deslocamento (posição e rotação) para mover a forma inteira antes de confirmar
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.rotacaoGraus = 0;
+    this.arrastandoForma = false;
+    this.ultimoMouseX = 0;
+    this.ultimoMouseY = 0;
+
+    // Snapshot do canvas para permitir pré-visualização fluida sem sujar a camada
+    this.snapshotImageData = null;
 
     this.escutarTecladoGlobal();
   }
@@ -40,46 +52,91 @@ export class FormasTool {
       const tagAtiva = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (tagAtiva === 'input' || tagAtiva === 'textarea' || tagAtiva === 'select') return;
 
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.fixarFormaNoCanvas();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        this.cancelarForma();
+      if (this.estado === 'transformacao') {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.fixarFormaNoCanvas();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          this.cancelarForma();
+        } else if (e.key === 'r' || e.key === 'R') {
+          // Atalho rápido para rodar 45 graus a cada toque na tecla R
+          this.rotacaoGraus = (this.rotacaoGraus + 45) % 360;
+          this.redesenharPreview();
+        }
       }
     });
   }
 
-  iniciarForma(e) {
+  iniciar(e) {
     const canvas = this.layerManager.obterCanvasAtivo();
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    this.startX = (e.clientX - rect.left) * (canvas.width / rect.width);
-    this.startY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    this.currentX = this.startX;
-    this.currentY = this.startY;
-    this.desenhando = true;
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    if (this.estado === 'transformacao') {
+      // Se já houver uma forma flutuante, verificar se o clique foi dentro para arrastá-la
+      this.arrastandoForma = true;
+      this.ultimoMouseX = x;
+      this.ultimoMouseY = y;
+      return;
+    }
+
+    // Iniciar novo desenho de forma
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    this.snapshotImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    this.estado = 'desenhando';
+    this.startX = x;
+    this.startY = y;
+    this.currentX = x;
+    this.currentY = y;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.rotacaoGraus = 0;
   }
 
-  atualizarProgresso(e) {
-    if (!this.desenhando) return;
+  mover(e) {
     const canvas = this.layerManager.obterCanvasAtivo();
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    this.currentX = (e.clientX - rect.left) * (canvas.width / rect.width);
-    this.currentY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    if (this.estado === 'desenhando') {
+      this.currentX = x;
+      this.currentY = y;
+      this.redesenharPreview();
+    } else if (this.estado === 'transformacao' && this.arrastandoForma) {
+      // Mover a posição inteira da forma arrastando o rato
+      const deltaX = x - this.ultimoMouseX;
+      const deltaY = y - this.ultimoMouseY;
+      this.offsetX += deltaX;
+      this.offsetY += deltaY;
+      this.ultimoMouseX = x;
+      this.ultimoMouseY = y;
+      this.redesenharPreview();
+    }
   }
 
-  finalizarForma() {
-    if (!this.desenhando) return;
-    this.desenhando = false;
+  soltar() {
+    if (this.estado === 'desenhando') {
+      this.estado = 'transformacao'; // Passa para o modo flutuante/ajuste
+    }
+    this.arrastandoForma = false;
+  }
 
+  redesenharPreview() {
     const canvas = this.layerManager.obterCanvasAtivo();
-    if (!canvas) return;
+    if (!canvas || !this.snapshotImageData) return;
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    // Restaura o canvas para antes de desenhar a forma
+    ctx.putImageData(this.snapshotImageData, 0, 0);
+
     ctx.save();
     ctx.globalAlpha = this.opacidade;
 
@@ -97,16 +154,26 @@ export class FormasTool {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    // Aplica a translação (mover) e rotação global
     const largura = this.currentX - this.startX;
     const altura = this.currentY - this.startY;
+    const centroX = this.startX + largura / 2 + this.offsetX;
+    const centroY = this.startY + altura / 2 + this.offsetY;
+
+    ctx.translate(centroX, centroY);
+    ctx.rotate((this.rotacaoGraus * Math.PI) / 180);
+    ctx.translate(-centroX, -centroY);
+
+    const xLocal = this.startX + this.offsetX;
+    const yLocal = this.startY + this.offsetY;
     const raioX = Math.abs(largura) / 2;
     const raioY = Math.abs(altura) / 2;
-    const centroX = this.startX + largura / 2;
-    const centroY = this.startY + altura / 2;
+    const cx = xLocal + largura / 2;
+    const cy = yLocal + altura / 2;
 
     if (this.tipo === 'circulo') {
       ctx.beginPath();
-      ctx.ellipse(centroX, centroY, raioX, raioY, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, raioX, raioY, 0, 0, Math.PI * 2);
       if (this.preencher && !this.modoBorracha) ctx.fill();
       if (this.larguraLinha > 0) ctx.stroke();
     } 
@@ -116,8 +183,8 @@ export class FormasTool {
       ctx.beginPath();
       for (let i = 0; i < numPontos; i++) {
         const angulo = (i * 2 * Math.PI) / numPontos - Math.PI / 2;
-        const px = centroX + raio * Math.cos(angulo);
-        const py = centroY + raio * Math.sin(angulo);
+        const px = cx + raio * Math.cos(angulo);
+        const py = cy + raio * Math.sin(angulo);
         if (i === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
@@ -127,35 +194,41 @@ export class FormasTool {
     } 
     else if (this.tipo === 'linha') {
       ctx.beginPath();
-      ctx.moveTo(this.startX, this.startY);
-      ctx.lineTo(this.currentX, this.currentY);
+      ctx.moveTo(xLocal, yLocal);
+      ctx.lineTo(xLocal + largura, yLocal + altura);
       if (this.larguraLinha > 0) ctx.stroke();
     } 
     else if (this.tipo === 'curva') {
-      // Linha curvada suave (caminho circular/bezier)
-      const meioX = (this.startX + this.currentX) / 2 - (this.currentY - this.startY) * 0.3;
-      const meioY = (this.startY + this.currentY) / 2 + (this.currentX - this.startX) * 0.3;
+      const meioX = (xLocal + (xLocal + largura)) / 2 - altura * 0.3;
+      const meioY = (yLocal + (yLocal + altura)) / 2 + largura * 0.3;
       ctx.beginPath();
-      ctx.moveTo(this.startX, this.startY);
-      ctx.quadraticCurveTo(meioX, meioY, this.currentX, this.currentY);
+      ctx.moveTo(xLocal, yLocal);
+      ctx.quadraticCurveTo(meioX, meioY, xLocal + largura, yLocal + altura);
       if (this.larguraLinha > 0) ctx.stroke();
     }
 
     ctx.restore();
+  }
+
+  fixarFormaNoCanvas() {
+    if (this.estado !== 'transformacao') return;
+    this.redesenharPreview(); // Garante que fica gravado definitivamente
+    this.estado = 'ocioso';
+    this.snapshotImageData = null;
 
     if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
       this.historyManager.salvarEstado();
     }
   }
 
-  fixarFormaNoCanvas() {
-    // Confirmação explícita se necessário (a forma já entra fixada ao soltar o rato, mas o Enter serve para validar ou duplicar o fluxo)
-    console.hologram ? null : console.log('Forma fixada com sucesso.');
-  }
-
   cancelarForma() {
-    if (this.historyManager) {
-      this.historyManager.undo();
+    if (this.estado !== 'transformacao' && this.estado !== 'desenhando') return;
+    const canvas = this.layerManager.obterCanvasAtivo();
+    if (canvas && this.snapshotImageData) {
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.putImageData(this.snapshotImageData, 0, 0); // Restaura o estado original
     }
+    this.estado = 'ocioso';
+    this.snapshotImageData = null;
   }
 }
