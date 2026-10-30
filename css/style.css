@@ -1,151 +1,148 @@
-:root {
-  --bg-pink: #fff0f5;
-  --accent-pink: #ff69b4;
-  --dark-purple: #4a2e35;
-  --panel-bg: #ffffff;
-  --border-color: #ffb6c1;
-}
-
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   user-select: none;
-  -webkit-touch-callout: none;
 }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--bg-pink);
-  color: var(--dark-purple);
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-header {
-  background-color: var(--panel-bg);
-  padding: 8px 16px;
-  border-bottom: 2px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 45px;
-}
-
-h1 {
-  font-size: 1.1rem;
-  color: var(--accent-pink);
-}
-
-.workspace {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  background: #eaeaea;
-  padding: 10px;
-  overflow: hidden;
-}
-
-.canvas-container {
-  position: relative;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  background: #ffffff;
-  border-radius: 4px;
-  max-width: 100%;
-  max-height: 100%;
-  aspect-ratio: 4 / 3;
-}
-
-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
+body, html {
   width: 100%;
   height: 100%;
-  touch-action: none; /* Impede o scroll da tela ao desenhar no celular */
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #1e1e24;
+  color: #f0f0f0;
 }
 
-.toolbar {
-  background-color: var(--panel-bg);
+#app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#top-bar {
+  height: 45px;
+  background-color: #2b2b36;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  border-bottom: 1px solid #3f3f4e;
+}
+
+.top-controls {
+  display: flex;
+  gap: 15px;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#main-workspace {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+#toolbar {
+  width: 180px;
+  background-color: #252530;
   padding: 10px;
-  border-top: 2px solid var(--border-color);
   display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  z-index: 10;
-}
-
-.tool-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 1px solid #3f3f4e;
 }
 
 button {
-  background: #fff;
-  border: 2px solid var(--accent-pink);
-  color: var(--dark-purple);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-button.active, button:hover {
-  background: var(--accent-pink);
-  color: #fff;
-}
-
-input[type="color"] {
+  background-color: #383848;
+  color: white;
   border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+  padding: 6px 10px;
+  border-radius: 4px;
   cursor: pointer;
-  background: none;
+  transition: background 0.2s;
 }
 
-input[type="range"] {
-  accent-color: var(--accent-pink);
-  width: 90px;
+button:hover {
+  background-color: #4f4f66;
 }
 
-/* ==========================================
-   RESPONSIVIDADE PARA CELULARES E TABLETS
-   ========================================== */
-@media (max-width: 768px) {
-  body {
-    font-size: 0.85rem;
-  }
+button.active {
+  background-color: #ff69b4;
+  color: #fff;
+  font-weight: bold;
+}
 
-  header {
-    padding: 6px 10px;
-  }
+#viewport {
+  flex: 1;
+  background-color: #121216;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
 
-  h1 {
-    font-size: 0.95rem;
-  }
+#canvas-container {
+  width: 1280px;
+  height: 720px;
+  position: relative;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
+  background-color: #ffffff;
+  transform-origin: center center;
+}
 
-  .toolbar {
-    gap: 8px;
-    padding: 8px;
-    justify-content: space-around;
-  }
+#right-panel {
+  width: 240px;
+  background-color: #252530;
+  border-left: 1px solid #3f3f4e;
+  padding: 10px;
+}
 
-  button {
-    padding: 5px 8px;
-    font-size: 0.8rem;
-  }
+#timeline-bar {
+  height: 100px;
+  background-color: #2b2b36;
+  border-top: 1px solid #3f3f4e;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 15px;
+  gap: 5px;
+}
 
-  input[type="range"] {
-    width: 60px;
-  }
+.playback-controls, .frame-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#timeline-frames-container {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.frame-thumb {
+  width: 60px;
+  height: 40px;
+  background-color: #383848;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.frame-thumb.active {
+  border-color: #ff69b4;
+  background-color: #523043;
 }
