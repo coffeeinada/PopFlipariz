@@ -19,24 +19,22 @@ import { HistoryTool } from './tools/historico.js';
 import { FileTool } from './tools/arquivo.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Elementos do DOM
   const canvasContainer = document.getElementById('canvas-container');
   const viewport = document.getElementById('viewport');
 
-  // 1. Inicializar Núcleos (Core)
+  // 1. Núcleos
   const historyManager = new HistoryManager();
   const layerManager = new LayerManager(canvasContainer, 1280, 720, historyManager);
   const animationManager = new AnimationManager(layerManager, historyManager);
   
-  // Ativar o código anti-perda acidental
   inicializarSistemaAntiPerda();
 
-  // 2. Inicializar Ferramentas (Tools)
-  const canvasAtivo = layerManager.obterCanvasAtivo();
-  const ctxAtivo = layerManager.obterCtxAtivo();
+  // 2. Ferramentas
+  let canvasAtivo = layerManager.obterCanvasAtivo();
+  let ctxAtivo = layerManager.obterCtxAtivo();
 
   const colorManager = new ColorManager(canvasAtivo, ctxAtivo);
-  const pincelEngine = inicializarPincel(canvasAtivo, historyManager, colorManager);
+  let pincelEngine = inicializarPincel(canvasAtivo, historyManager, colorManager);
   const baldeTool = new FloodFillTool(layerManager, historyManager, colorManager);
   const formasTool = new FormasTool(layerManager, historyManager, colorManager);
   const selecaoTool = new SelectionTool(layerManager, historyManager, colorManager);
@@ -45,15 +43,88 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyTool = new HistoryTool(historyManager);
   const fileTool = new FileTool(layerManager, historyManager, animationManager);
 
-  // 3. Conectar a Interface (UI Binding)
+  let ferramentaAtual = 'pincel';
+
+  // Função auxiliar para atualizar o canvas ativo quando trocar de camada ou frame
+  function atualizarReferenciaCanvasAtivo() {
+    canvasAtivo = layerManager.obterCanvasAtivo();
+    ctxAtivo = layerManager.obterCtxAtivo();
+    // Reinicializa o pincel no novo canvas ativo
+    pincelEngine = inicializarPincel(canvasAtivo, historyManager, colorManager);
+  }
+
+  // Interceção de cliques no workspace consoante a ferramenta ativa
+  canvasContainer.addEventListener('mousedown', (e) => {
+    atualizarReferenciaCanvasAtivo();
+    if (ferramentaAtual === 'balde') {
+      baldeTool.executar(e);
+    } else if (ferramentaAtual === 'formas') {
+      const rect = canvasAtivo.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvasAtivo.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvasAtivo.height / rect.height);
+      formasTool.iniciarForma(x, y);
+    }
+  });
+
+  canvasContainer.addEventListener('mouseup', (e) => {
+    if (ferramentaAtual === 'formas') {
+      const rect = canvasAtivo.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvasAtivo.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvasAtivo.height / rect.height);
+      formasTool.atualizarProgresso(x, y);
+      formasTool.fixarFormaNoCanvas();
+    }
+  });
+
+  // 3. Conexão de Botões da Interface (UI)
+  function ativarBotaoFerramenta(idBotao, nomeFerramenta) {
+    document.querySelectorAll('#toolbar button').forEach(b => b.classList.remove('active'));
+    document.getElementById(idBotao).classList.add('active');
+    ferramentaAtual = nomeFerramenta;
+  }
+
+  document.getElementById('btnPincel').onclick = () => {
+    ativarBotaoFerramenta('btnPincel', 'pincel');
+    pincelEngine.setModoBorracha(false);
+  };
+
+  document.getElementById('btnBorracha').onclick = () => {
+    ativarBotaoFerramenta('btnBorracha', 'borracha');
+    pincelEngine.setModoBorracha(true);
+  };
+
+  document.getElementById('btnBalde').onclick = () => ativarBotaoFerramenta('btnBalde', 'balde');
+  document.getElementById('btnFormas').onclick = () => ativarBotaoFerramenta('btnFormas', 'formas');
+  document.getElementById('btnSelecao').onclick = () => ativarBotaoFerramenta('btnSelecao', 'selecao');
+  document.getElementById('btnMaozinha').onclick = () => {
+    ativarBotaoFerramenta('btnMaozinha', 'maozinha');
+    maozinhaTool.setAtivo(true);
+  };
+
+  // Gestão de Camadas na UI
+  document.getElementById('btnAddCamada').onclick = () => {
+    layerManager.adicionarCamada();
+    atualizarReferenciaCanvasAtivo();
+  };
+
+  document.getElementById('btnDuplicarCamada').onclick = () => {
+    layerManager.duplicarCamada();
+    atualizarReferenciaCanvasAtivo();
+  };
+
+  document.getElementById('btnRemoverCamada').onclick = () => {
+    layerManager.removerCamada();
+    atualizarReferenciaCanvasAtivo();
+  };
+
+  // Histórico e Zoom
   document.getElementById('btnDesfazer').onclick = () => historyTool.desfazer();
   document.getElementById('btnRefazer').onclick = () => historyTool.refazer();
-
   document.getElementById('btnZoomIn').onclick = () => zoomTool.zoomIn();
   document.getElementById('btnZoomOut').onclick = () => zoomTool.zoomOut();
   document.getElementById('btnZoomReset').onclick = () => zoomTool.resetZoom();
 
-  // Seletor de Cores
+  // Cores
   const pickerCor = document.getElementById('pickerCorPrimaria');
   pickerCor.oninput = (e) => colorManager.setCorPrimaria(e.target.value);
   colorManager.aoMudarCorPrimaria = (cor) => { pickerCor.value = cor; };
@@ -61,11 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnTrocarCores').onclick = () => colorManager.inverterCores();
   document.getElementById('btnContaGotas').onclick = () => colorManager.ativarContaGotas(true);
 
-  // Botões de Ferramentas
-  document.getElementById('btnPincel').onclick = () => pincelEngine.setFerramenta('pincel');
-  document.getElementById('btnBorracha').onclick = () => pincelEngine.setFerramenta('borracha');
-
-  // Controlo da Linha do Tempo FBF
+  // Timeline e Frames
   document.getElementById('btnPlayPause').onclick = () => {
     if (animationManager.reproduzindo) {
       animationManager.pause();
@@ -79,25 +146,30 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnAddFrameDir').onclick = () => {
     animationManager.adicionarNovoFrameDireita();
     renderizarTimeline();
+    atualizarReferenciaCanvasAtivo();
   };
 
   document.getElementById('btnAddFrameEsq').onclick = () => {
     animationManager.adicionarNovoFrameEsquerda();
     renderizarTimeline();
+    atualizarReferenciaCanvasAtivo();
   };
 
   document.getElementById('btnDuplicarFrame').onclick = () => {
     animationManager.duplicarFrameAtual();
     renderizarTimeline();
+    atualizarReferenciaCanvasAtivo();
   };
 
   document.getElementById('btnExcluirFrame').onclick = () => {
     animationManager.excluirFrameAtual();
     renderizarTimeline();
+    atualizarReferenciaCanvasAtivo();
   };
 
   function renderizarTimeline() {
     const container = document.getElementById('timeline-frames-container');
+    if (!container) return;
     container.innerHTML = '';
     animationManager.frames.forEach((frame, idx) => {
       const thumb = document.createElement('div');
@@ -106,13 +178,13 @@ document.addEventListener('DOMContentLoaded', () => {
       thumb.onclick = () => {
         animationManager.carregarFrameNoWorkspace(idx);
         renderizarTimeline();
+        atualizarReferenciaCanvasAtivo();
       };
       container.appendChild(thumb);
     });
   }
 
-  // Renderização inicial dos quadros na timeline
   renderizarTimeline();
-
-  console.log('PopFlipariz carregado com sucesso!');
+  layerManager.atualizarUIlistaCamadas();
+  console.log('PopFlipariz totalmente integrado e interativo!');
 });
