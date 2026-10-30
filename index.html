@@ -49,7 +49,7 @@
 
         <!-- Área de Cores 🎨 -->
         <div class="color-picker-section">
-          <label for="pickerCorPrimaria">Cor Primária</label>
+          <label for="pickerCorPrimaria">Cor Primária / Contorno</label>
           <input type="color" id="pickerCorPrimaria" value="#ff69b4">
           <button id="btnTrocarCores" title="Trocar Primária/Secundária">🔄 Swap</button>
         </div>
@@ -83,30 +83,44 @@
 
         <hr>
 
-        <!-- Propriedades do Balde de Tinta 🪣 -->
-        <div class="bucket-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
-          <span style="font-weight: bold; color: #ff69b4;">🪣 Definições do Balde</span>
+        <!-- Propriedades da Ferramenta de Formas ⭕ -->
+        <div class="shapes-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">⭕ Definições de Formas</span>
 
-          <label><input type="checkbox" id="chkBaldeBorracha"> Modo Borracha</label>
+          <label><input type="checkbox" id="chkFormaBorracha"> Modo Borracha</label>
 
-          <label>Opacidade (0.05 - 1.0): 
-            <input type="number" id="inputBaldeOpacidade" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
-          </label>
-
-          <label>Tolerância (0 - 255): 
-            <input type="number" id="inputBaldeTolerancia" value="32" min="0" max="255" step="1" style="width: 100%;">
-          </label>
-
-          <label>Expandir (0 - 7, aceita decimais): 
-            <input type="number" id="inputBaldeExpandir" value="0.0" min="0.0" max="7.0" step="0.1" style="width: 100%;">
-          </label>
-
-          <label>Amostragem: 
-            <select id="selectBaldeAmostragem" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
-              <option value="atual">Camada Atual</option>
-              <option value="todas">Todas as Camadas</option>
+          <label>Forma: 
+            <select id="selectTipoForma" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+              <option value="circulo">Círculo / Elipse</option>
+              <option value="poligono">Polígono (3 a 10 Pontas)</option>
+              <option value="linha">Linha Reta Simples</option>
+              <option value="curva">Linha Curvada (Suave)</option>
             </select>
           </label>
+
+          <label id="containerPontosPoligono">Pontos (3 - 10): 
+            <input type="number" id="inputPontosPoligono" value="4" min="3" max="10" step="1" style="width: 100%;">
+          </label>
+
+          <label><input type="checkbox" id="chkPreenchimentoForma" checked> Preencher</label>
+
+          <label>Cor do Preenchimento: 
+            <input type="color" id="pickerPreenchimento" value="#ffb6c1" style="width: 100%; height: 25px; border: none; background: none; cursor: pointer;">
+          </label>
+
+          <label>Largura da Linha (0.1 - 200): 
+            <input type="number" id="inputLarguraLinha" value="4.0" min="0.1" max="200.0" step="0.1" style="width: 100%;">
+          </label>
+
+          <label>Opacidade (0.05 - 1.0): 
+            <input type="number" id="inputOpacidadeForma" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
+          </label>
+
+          <!-- Botões de Confirmação / Fixação -->
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button id="btnConfirmarForma" style="flex: 1; background: #2e7d32; color: #fff; font-weight: bold; padding: 6px; border: none; border-radius: 4px; cursor: pointer;" title="Fixar forma (Enter)">✅ Fixar (Enter)</button>
+            <button id="btnCancelarForma" style="flex: 1; background: #c62828; color: #fff; padding: 6px; border: none; border-radius: 4px; cursor: pointer;" title="Cancelar forma (Esc)">❌ Cancelar</button>
+          </div>
         </div>
 
         <hr>
