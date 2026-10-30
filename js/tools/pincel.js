@@ -6,7 +6,7 @@
 export class PincelTool {
   constructor(canvas, historyManager, colorManager) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas ? canvas.getContext('2d') : null;
     this.historyManager = historyManager;
     this.colorManager = colorManager;
 
@@ -20,6 +20,7 @@ export class PincelTool {
   }
 
   atualizarCanvas(novoCanvas) {
+    if (!novoCanvas) return;
     this.canvas = novoCanvas;
     this.ctx = novoCanvas.getContext('2d');
     this.inicializarEventos();
@@ -75,7 +76,7 @@ export class PincelTool {
   }
 
   desenhar(e) {
-    if (!this.desenhando) return;
+    if (!this.desenhando || !this.ctx) return;
     const pos = this.obterCoordenadas(e);
 
     this.ctx.save();
@@ -104,14 +105,13 @@ export class PincelTool {
   pararDesenho() {
     if (this.desenhando) {
       this.desenhando = false;
-      if (this.historyManager) {
+      if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
         this.historyManager.salvarEstado();
       }
     }
   }
 }
 
-// Exporta também a função auxiliar para manter total retrocompatibilidade
 export function inicializarPincel(canvas, historyManager, colorManager) {
   return new PincelTool(canvas, historyManager, colorManager);
 }
