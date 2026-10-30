@@ -40,6 +40,10 @@
         <button id="btnBalde" title="Balde de Tinta">🪣 Balde</button>
         <button id="btnFormas" title="Formas Geométricas">⭕ Formas</button>
         <button id="btnSelecao" title="Laço de Seleção">🤠 Seleção</button>
+
+        <!-- NOVO BOTAO: Ferramenta de Transformação Livre -->
+        <button id="btnTransformar" title="Transformar Seleção/Conteúdo">🔲 Transformar</button>
+
         <button id="btnMaozinha" title="Mãozinha / Pan (Espaço)">🤚 Mãozinha</button>
         <button id="btnPontoFuga" title="Ponto de Fuga & Grade">📐 Ponto de Fuga</button>
         
@@ -77,7 +81,54 @@
 
         <hr>
 
-        <!-- Ponto de Fuga / Grade Controls -->
+        <!-- PAINEL DE SELEÇÃO 🤠 -->
+        <div id="panelSelecao" class="selecao-section" style="display: none; flex-direction: column; gap: 8px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">🤠 Definições de Seleção</span>
+          <label>Modo de Seleção:
+            <select id="selectModoSelecao" style="width: 100%;">
+              <option value="quadrado">Quadrado / Retângulo</option>
+              <option value="circulo">Círculo / Elipse</option>
+              <option value="laco">Laço Livre</option>
+              <option value="linha_reta">Caminho de Linha Reta</option>
+              <option value="balde_selecao">Balde de Seleção (Varinha)</option>
+            </select>
+          </label>
+
+          <label id="containerAmostragemSelecao" style="display: none;">Amostragem do Balde:
+            <select id="selectAmostragemSelecao" style="width: 100%;">
+              <option value="todas">Tudo (Todas as Camadas)</option>
+              <option value="atual">Camada Atual</option>
+              <option value="mesma_cor">Da Mesma Cor</option>
+            </select>
+          </label>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+            <button id="btnSelecionarTudo" style="flex: 1 1 45%;">🔲 Tudo</button>
+            <button id="btnInverterSelecao" style="flex: 1 1 45%;">🔄 Inverter</button>
+            <button id="btnLimparSelecao" style="flex: 1 1 45%;">❌ Limpar</button>
+            <button id="btnPreencherSelecao" style="flex: 1 1 45%;">🎨 Preencher</button>
+          </div>
+        </div>
+
+        <!-- PAINEL DE TRANSFORMAÇÃO 🔲 -->
+        <div id="panelTransformar" class="transformar-section" style="display: none; flex-direction: column; gap: 8px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">🔲 Transformação de Conteúdo</span>
+          <label>Modo:
+            <select id="selectModoTransformacao" style="width: 100%;">
+              <option value="padrao">Mover / Redimensionar / Girar</option>
+              <option value="perspectiva">Perspetiva (9 Pontos)</option>
+              <option value="corte">Cortar / Expandir Tela</option>
+            </select>
+          </label>
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button id="btnAplicarTransformacao" style="flex: 1; background: #2e7d32; color: #fff; font-weight: bold;">✅ Aplicar (Enter)</button>
+            <button id="btnCancelarTransformacao" style="flex: 1; background: #c62828; color: #fff;">❌ Cancelar</button>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Ponto de Fuga -->
         <div id="panelPontoFuga" class="ponto-fuga-section" style="display: none; flex-direction: column; gap: 8px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">📐 Ponto de Fuga & Grade</span>
           <label><input type="checkbox" id="chkAtivarGrade" checked> Ativar Grade</label>
@@ -85,7 +136,6 @@
           <label>Cor do Traçado: <input type="color" id="pickerCorGuia" value="#00ffff" style="width: 100%; height: 22px;"></label>
           <label>Largura (1 - 10): <input type="number" id="inputLarguraGuia" value="1.0" min="1" max="10" step="1" style="width: 100%;"></label>
           <label>Quantidade de Linhas (2 - 40): <input type="number" id="inputQtdLinhasFuga" value="16" min="2" max="40" step="1" style="width: 100%;"></label>
-          <span style="font-size: 10px; color: #aaa;">Dica: Clica e arrasta no canvas para mover o ponto de fuga.</span>
         </div>
 
         <!-- Propriedades de Formas -->
@@ -190,7 +240,6 @@
             <button id="btnEspelharV" title="Espelhar Vertical">↕️ Espelhar V</button>
           </div>
 
-          <!-- Opções da Camada Selecionada -->
           <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; background: #252530; padding: 6px; border-radius: 4px; margin-top: 5px;">
             <label>Mesclagem: 
               <select id="selectBlendMode" style="width: 100%; margin-top: 2px;">
