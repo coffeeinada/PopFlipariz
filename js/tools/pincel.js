@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Motor de Pincel Avançado
+ * PopFlipariz - Motor de Pincel e Borracha Avançado
  * Caminho: js/tools/pincel.js
  */
 
@@ -13,14 +13,21 @@ export class PincelTool {
     this.desenhando = false;
     this.modoBorracha = false;
     
-    // Propriedades avançadas
-    this.tamanho = 8.0;          // Aceita decimais (ex: 1.1, 1.5, etc.) até 200
-    this.opacidade = 1.0;        // Aceita decimais (ex: 0.1 a 1.0)
-    this.estabilizador = 0;      // Inteiros de 0 a 10
-    this.tipo = 'normal';        // 'normal', 'pixel', 'spray', 'borradinho', 'aquarela', 'bico_de_pena'
+    // Propriedades do Pincel
+    this.tamanho = 8.0;
+    this.opacidade = 1.0;
+    this.estabilizador = 0;
+    this.tipo = 'normal'; // 'normal', 'pixel', 'spray', 'borradinho', 'aquarela', 'bico_de_pena', 'laco'
 
-    // Controlo interno do estabilizador e velocidade
+    // Propriedades da Borracha
+    this.eraserSize = 20.0;
+    this.eraserOpacity = 1.0;
+    this.eraserShape = 'round'; // 'round' ou 'square'
+    this.eraserType = 'normal'; // 'normal' ou 'soft'
+
+    // Controlo interno
     this.historicoPontos = [];
+    this.pontosLaco = [];
     this.ultimoX = 0;
     this.ultimoY = 0;
     this.ultimoTempo = 0;
@@ -53,6 +60,22 @@ export class PincelTool {
 
   setTipo(tipo) {
     this.tipo = tipo || 'normal';
+  }
+
+  setEraserSize(s) {
+    this.eraserSize = Math.max(0, Math.min(400.0, parseFloat(s) || 20.0));
+  }
+
+  setEraserOpacity(o) {
+    this.eraserOpacity = Math.max(0.01, Math.min(1.0, parseFloat(o) || 1.0));
+  }
+
+  setEraserShape(shape) {
+    this.eraserShape = shape || 'round';
+  }
+
+  setEraserType(type) {
+    this.eraserType = type || 'normal';
   }
 
   inicializarEventos() {
@@ -97,15 +120,25 @@ export class PincelTool {
     this.ultimoY = pos.y;
     this.ultimoTempo = pos.tempo;
     this.historicoPontos = [pos];
+
+    if (this.tipo === 'laco' && !this.modoBorracha) {
+      this.pontosLaco = [pos];
+    }
   }
 
   desenhar(e) {
     if (!this.desenhando || !this.ctx) return;
     const posRaw = this.obterCoordenadas(e);
 
-    // Aplicação do Estabilizador (0 a 10) via média móvel de pontos
+    // Se estiver no modo Laço, acumula pontos e desenha um contorno guia leve
+    if (this.tipo === 'laco' && !this.modoBorracha) {
+      this.pontosLaco.push(posRaw);
+      return;
+    }
+
+    // Aplicação do Estabilizador (0 a 10)
     let pos = posRaw;
-    if (this.estabilizador > 0) {
+    if (this.estabilizador > 0 && !this.modoBorracha) {
       this.historicoPontos.push(posRaw);
       const maxPontos = this.estabilizador * 2 + 1;
       if (this.historicoPontos.length > maxPontos) {
@@ -125,94 +158,117 @@ export class PincelTool {
     }
 
     this.ctx.save();
-    this.ctx.globalAlpha = this.modoBorracha ? 1.0 : this.opacidade;
 
     if (this.modoBorracha) {
       this.ctx.globalCompositeOperation = 'destination-out';
+      this.ctx.globalAlpha = this.eraserOpacity;
+      this.ctx.lineWidth = Math.max(0, this.eraserSize);
+
+      if (this.eraserShape === 'square') {
+        this.ctx.lineCap = 'square';
+        this.ctx.lineJoin = 'miter';
+      } else {
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+      }
+
+      if (this.eraserType === 'soft') {
+        this.ctx.shadowBlur = this.eraserSize * 0.4;
+        this.ctx.shadowColor = 'rgba(0,0,0,1)';
+      } else {
+        this.ctx.shadowBlur = 0;
+      }
+
       this.ctx.strokeStyle = 'rgba(0,0,0,1)';
       this.ctx.fillStyle = 'rgba(0,0,0,1)';
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.ultimoX, this.ultimoY);
+      this.ctx.lineTo(pos.x, pos.y);
+      this.ctx.stroke();
+
     } else {
+      this.ctx.globalAlpha = this.opacidade;
       this.ctx.globalCompositeOperation = 'source-over';
       const cor = this.colorManager ? this.colorManager.corPrimaria : '#ff69b4';
       this.ctx.strokeStyle = cor;
       this.ctx.fillStyle = cor;
-    }
 
-    // Renderização baseada no TIPO DE PINCEL selecionado
-    switch (this.tipo) {
-      case 'pixel':
-        this.ctx.imageSmoothingEnabled = false;
-        this.ctx.lineWidth = Math.max(1, Math.round(this.tamanho));
-        this.ctx.lineCap = 'square';
-        this.ctx.lineJoin = 'bevel';
-        this.ctx.beginPath();
-        this.ctx.moveTo(Math.round(this.ultimoX), Math.round(this.ultimoY));
-        this.ctx.lineTo(Math.round(pos.x), Math.round(pos.y));
-        this.ctx.stroke();
-        break;
+      switch (this.tipo) {
+        case 'pixel':
+          this.ctx.imageSmoothingEnabled = false;
+          this.ctx.lineWidth = Math.max(1, Math.round(this.tamanho));
+          this.ctx.lineCap = 'square';
+          this.ctx.lineJoin = 'bevel';
+          this.ctx.beginPath();
+          this.ctx.moveTo(Math.round(this.ultimoX), Math.round(this.ultimoY));
+          this.ctx.lineTo(Math.round(pos.x), Math.round(pos.y));
+          this.ctx.stroke();
+          break;
 
-      case 'spray':
-        const raio = this.tamanho / 2;
-        const densidade = Math.max(5, Math.floor(this.tamanho * 2));
-        for (let i = 0; i < densidade; i++) {
-          const angulo = Math.random() * Math.PI * 2;
-          const r = Math.random() * raio;
-          const sx = pos.x + Math.cos(angulo) * r;
-          const sy = pos.y + Math.sin(angulo) * r;
-          this.ctx.fillRect(sx, sy, Math.max(1, this.tamanho / 8), Math.max(1, this.tamanho / 8));
-        }
-        break;
+        case 'spray':
+          const raio = this.tamanho / 2;
+          const densidade = Math.max(5, Math.floor(this.tamanho * 2));
+          for (let i = 0; i < densidade; i++) {
+            const angulo = Math.random() * Math.PI * 2;
+            const r = Math.random() * raio;
+            const sx = pos.x + Math.cos(angulo) * r;
+            const sy = pos.y + Math.sin(angulo) * r;
+            this.ctx.fillRect(sx, sy, Math.max(1, this.tamanho / 8), Math.max(1, this.tamanho / 8));
+          }
+          break;
 
-      case 'borradinho':
-        this.ctx.shadowBlur = this.tamanho * 0.8;
-        this.ctx.shadowColor = this.modoBorracha ? 'rgba(0,0,0,1)' : (this.colorManager ? this.colorManager.corPrimaria : '#ff69b4');
-        this.ctx.lineWidth = this.tamanho;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.ultimoX, this.ultimoY);
-        this.ctx.lineTo(pos.x, pos.y);
-        this.ctx.stroke();
-        break;
+        case 'borradinho':
+          this.ctx.shadowBlur = this.tamanho * 0.8;
+          this.ctx.shadowColor = cor;
+          this.ctx.lineWidth = this.tamanho;
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.ultimoX, this.ultimoY);
+          this.ctx.lineTo(pos.x, pos.y);
+          this.ctx.stroke();
+          break;
 
-      case 'aquarela':
-        this.ctx.globalAlpha = (this.modoBorracha ? 1.0 : this.opacidade) * 0.3;
-        this.ctx.shadowBlur = this.tamanho * 1.5;
-        this.ctx.shadowColor = this.modoBorracha ? 'rgba(0,0,0,1)' : (this.colorManager ? this.colorManager.corPrimaria : '#ff69b4');
-        this.ctx.lineWidth = this.tamanho * 1.5;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.ultimoX, this.ultimoY);
-        this.ctx.lineTo(pos.x, pos.y);
-        this.ctx.stroke();
-        break;
+        case 'aquarela':
+          this.ctx.globalAlpha = this.opacidade * 0.3;
+          this.ctx.shadowBlur = this.tamanho * 1.5;
+          this.ctx.shadowColor = cor;
+          this.ctx.lineWidth = this.tamanho * 1.5;
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.ultimoX, this.ultimoY);
+          this.ctx.lineTo(pos.x, pos.y);
+          this.ctx.stroke();
+          break;
 
-      case 'bico_de_pena':
-        const distancia = Math.hypot(pos.x - this.ultimoX, pos.y - this.ultimoY);
-        const deltaTempo = Math.max(1, pos.tempo - this.ultimoTempo);
-        const velocidade = distancia / deltaTempo;
-        const larguraDinamica = Math.max(0.5, this.tamanho / (1 + velocidade * 0.4));
-        
-        this.ctx.lineWidth = larguraDinamica;
-        this.ctx.lineCap = 'butt';
-        this.ctx.lineJoin = 'miter';
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.ultimoX, this.ultimoY);
-        this.ctx.lineTo(pos.x, pos.y);
-        this.ctx.stroke();
-        break;
+        case 'bico_de_pena':
+          const distancia = Math.hypot(pos.x - this.ultimoX, pos.y - this.ultimoY);
+          const deltaTempo = Math.max(1, pos.tempo - this.ultimoTempo);
+          const velocidade = distancia / deltaTempo;
+          const larguraDinamica = Math.max(0.5, this.tamanho / (1 + velocidade * 0.4));
+          
+          this.ctx.lineWidth = larguraDinamica;
+          this.ctx.lineCap = 'butt';
+          this.ctx.lineJoin = 'miter';
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.ultimoX, this.ultimoY);
+          this.ctx.lineTo(pos.x, pos.y);
+          this.ctx.stroke();
+          break;
 
-      case 'normal':
-      default:
-        this.ctx.lineWidth = this.tamanho;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.ultimoX, this.ultimoY);
-        this.ctx.lineTo(pos.x, pos.y);
-        this.ctx.stroke();
-        break;
+        case 'normal':
+        default:
+          this.ctx.lineWidth = this.tamanho;
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.ultimoX, this.ultimoY);
+          this.ctx.lineTo(pos.x, pos.y);
+          this.ctx.stroke();
+          break;
+      }
     }
 
     this.ctx.restore();
@@ -225,7 +281,27 @@ export class PincelTool {
   pararDesenho() {
     if (this.desenhando) {
       this.desenhando = false;
+
+      // Se terminou o traço do Pincel Laço, preenche a forma fechada
+      if (this.tipo === 'laco' && !this.modoBorracha && this.pontosLaco.length > 2 && this.ctx) {
+        this.ctx.save();
+        this.ctx.globalAlpha = this.opacidade;
+        this.ctx.globalCompositeOperation = 'source-over';
+        this.ctx.fillStyle = this.colorManager ? this.colorManager.corPrimaria : '#ff69b4';
+        
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.pontosLaco[0].x, this.pontosLaco[0].y);
+        for (let i = 1; i < this.pontosLaco.length; i++) {
+          this.ctx.lineTo(this.pontosLaco[i].x, this.pontosLaco[i].y);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.restore();
+      }
+
       this.historicoPontos = [];
+      this.pontosLaco = [];
+
       if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
         this.historyManager.salvarEstado();
       }
