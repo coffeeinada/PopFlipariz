@@ -47,7 +47,7 @@
         
         <hr>
 
-        <!-- Área de Cores 🎨 (Conta-gotas removido pois já vem no input color nativo) -->
+        <!-- Área de Cores 🎨 -->
         <div class="color-picker-section">
           <label for="pickerCorPrimaria">Cor Primária</label>
           <input type="color" id="pickerCorPrimaria" value="#ff69b4">
@@ -56,7 +56,7 @@
 
         <hr>
 
-        <!-- Seção de Paleta de Cores 🎨 (Criar, Excluir, Importar/Exportar e Gestão de Cores) -->
+        <!-- Seção de Paleta de Cores 🎨 -->
         <div class="palette-section" style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
           <span style="font-weight: bold; color: #ff69b4;">🎨 Paletas de Cores</span>
           
@@ -72,17 +72,41 @@
             <input type="file" id="inputImportarPaletas" accept=".json" style="display: none;">
           </div>
 
-          <!-- Contentor das Cores da Paleta Ativa -->
-          <div id="paleta-cores-container" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto; background: #1a1a24; padding: 5px; border-radius: 4px; border: 1px solid #333; min-height: 38px;">
-            <!-- Cores renderizadas dinamicamente -->
-          </div>
+          <div id="paleta-cores-container" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 100px; overflow-y: auto; background: #1a1a24; padding: 5px; border-radius: 4px; border: 1px solid #333; min-height: 38px;"></div>
 
-          <!-- Ações nas Cores (Criar / Substituir / Excluir) -->
           <div style="display: flex; gap: 4px;">
-            <button id="btnAddCorPaleta" style="flex: 1;" title="Adicionar cor atual do seletor à paleta">➕ Criar Cor</button>
-            <button id="btnSubstituirCor" style="flex: 1;" title="Substituir cor selecionada pela cor atual">🔄 Substituir</button>
-            <button id="btnRemoverCor" style="flex: 1;" title="Remover cor selecionada">❌ Apagar</button>
+            <button id="btnAddCorPaleta" style="flex: 1;" title="Adicionar cor atual">➕ Criar Cor</button>
+            <button id="btnSubstituirCor" style="flex: 1;" title="Substituir cor selecionada">🔄 Substituir</button>
+            <button id="btnRemoverCor" style="flex: 1;" title="Remover cor">❌ Apagar</button>
           </div>
+        </div>
+
+        <hr>
+
+        <!-- Propriedades do Balde de Tinta 🪣 -->
+        <div class="bucket-properties-section" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+          <span style="font-weight: bold; color: #ff69b4;">🪣 Definições do Balde</span>
+
+          <label><input type="checkbox" id="chkBaldeBorracha"> Modo Borracha</label>
+
+          <label>Opacidade (0.05 - 1.0): 
+            <input type="number" id="inputBaldeOpacidade" value="1.0" min="0.05" max="1.0" step="0.05" style="width: 100%;">
+          </label>
+
+          <label>Tolerância (0 - 255): 
+            <input type="number" id="inputBaldeTolerancia" value="32" min="0" max="255" step="1" style="width: 100%;">
+          </label>
+
+          <label>Expandir (0 - 7, aceita decimais): 
+            <input type="number" id="inputBaldeExpandir" value="0.0" min="0.0" max="7.0" step="0.1" style="width: 100%;">
+          </label>
+
+          <label>Amostragem: 
+            <select id="selectBaldeAmostragem" style="width: 100%; margin-top: 2px; padding: 3px; background: #252530; color: #fff; border: 1px solid #444;">
+              <option value="atual">Camada Atual</option>
+              <option value="todas">Todas as Camadas</option>
+            </select>
+          </label>
         </div>
 
         <hr>
@@ -148,9 +172,7 @@
 
       <!-- Área de Visualização do Canvas / Workspace principal -->
       <main id="viewport">
-        <div id="canvas-container">
-          <!-- Os canvas das camadas serão injetados dinamicamente pelo LayerManager -->
-        </div>
+        <div id="canvas-container"></div>
       </main>
 
       <!-- Painel Direito: Camadas e Configurações -->
@@ -168,7 +190,7 @@
       </aside>
     </div>
 
-    <!-- Barra Inferior: Área de Animação FBF 🎬 -->
+    <!-- Barra Inferior: Animação FBF 🎬 -->
     <footer id="timeline-bar">
       <div class="playback-controls">
         <button id="btnPlayPause">▶️ Play</button>
@@ -184,13 +206,10 @@
         <button id="btnExcluirFrame">🗑️ Excluir Frame</button>
       </div>
 
-      <div id="timeline-frames-container">
-        <!-- Os quadros (frames) serão renderizados aqui -->
-      </div>
+      <div id="timeline-frames-container"></div>
     </footer>
   </div>
 
-  <!-- Script Principal Módulo ES6 -->
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
