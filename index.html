@@ -2,59 +2,105 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PopFlipariz - Estúdio de Animação FBF</title>
-  
-  <!-- Estilos organizados na pasta css -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div id="app-container">
+    <!-- Barra Superior / Menu de Arquivo e Ferramentas Globais -->
+    <header id="top-bar">
+      <div class="logo">🎬 <span>PopFlipariz</span></div>
+      
+      <div class="top-controls">
+        <!-- Área de Arquivo 📄 -->
+        <div class="group">
+          <input type="text" id="inputNomeObra" value="Minha Animacao PopFlip" placeholder="Nome da Obra">
+          <button id="btnNovoProjeto" title="Novo Projeto">📄 Novo</button>
+          <button id="btnExportar" title="Exportar / Baixar">💾 Exportar</button>
+        </div>
 
-  <!-- Cabeçalho do Estúdio -->
-  <header>
-    <h1>✨ PopFlipariz ✨</h1>
-    <span style="font-size: 0.8rem; color: #7a5c65;">PopPink Studio</span>
-  </header>
+        <!-- Área de Desfazer e Refazer ↩️ ↪️ -->
+        <div class="group">
+          <button id="btnDesfazer" title="Desfazer (Ctrl+Z)">↩️</button>
+          <button id="btnRefazer" title="Refazer (Ctrl+Y)">↪️</button>
+        </div>
 
-  <!-- Área de Trabalho (Workspace) com o Canvas de Desenho -->
-  <main class="workspace">
-    <div class="canvas-container" id="canvasContainer">
-      <!-- Resolução interna de desenho otimizada para performance -->
-      <canvas id="paintCanvas" width="800" height="600"></canvas>
+        <!-- Área de Zoom 🔍 -->
+        <div class="group">
+          <button id="btnZoomIn" title="Zoom In (I)">🔍+</button>
+          <button id="btnZoomOut" title="Zoom Out (O)">🔍-</button>
+          <button id="btnZoomReset" title="Restaurar Zoom">100%</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="main-workspace">
+      <!-- Barra Lateral de Ferramentas -->
+      <aside id="toolbar">
+        <button id="btnPincel" class="active" title="Pincel (B)">✏️ Pincel</button>
+        <button id="btnBorracha" title="Borracha (E)">🧹 Borracha</button>
+        <button id="btnBalde" title="Balde de Tinta">🪣 Balde</button>
+        <button id="btnFormas" title="Formas Geometricas">⭕ Formas</button>
+        <button id="btnSelecao" title="Laço de Seleção">🤠 Seleção</button>
+        <button id="btnMaozinha" title="Mãozinha / Pan (Espaço)">🤚 Mãozinha</button>
+        
+        <hr>
+
+        <!-- Área de Cores 🎨 -->
+        <div class="color-picker-section">
+          <label>Cor Primária</label>
+          <input type="color" id="pickerCorPrimaria" value="#ff69b4">
+          <button id="btnTrocarCores" title="Trocar Primária/Secundária">🔄 Swap</button>
+          <button id="btnContaGotas" title="Conta-Gotas">🧪</button>
+        </div>
+      </aside>
+
+      <!-- Área de Visualização do Canvas / Workspace principal -->
+      <main id="viewport">
+        <div id="canvas-container">
+          <!-- Os canvas das camadas serão injetados dinamicamente pelo LayerManager -->
+        </div>
+      </main>
+
+      <!-- Painel Direito: Camadas e Configurações -->
+      <aside id="right-panel">
+        <section id="layer-section">
+          <h3>🗂️ Camadas</h3>
+          <div class="layer-actions">
+            <button id="btnAddCamada">+ Nova</button>
+            <button id="btnDuplicarCamada">📋 Duplicar</button>
+            <button id="btnFundirCamada">⬇️ Fundir</button>
+            <button id="btnRemoverCamada">🗑️ Excluir</button>
+          </div>
+          <ul id="listaCamadas"></ul>
+        </section>
+      </aside>
     </div>
-  </main>
 
-  <!-- Barra de Ferramentas Inferior Expandida -->
-  <footer class="toolbar">
-    <div class="tool-group">
-      <button id="btnPincel" class="active">✏️ Pincel</button>
-      <button id="btnBorracha">🧹 Borracha</button>
-      <button id="btnUndo" title="Desafazer (Ctrl+Z)">↩️</button>
-      <button id="btnRedo" title="Refazer (Ctrl+Y)">↪️</button>
-      <button id="btnLimpar">🗑️ Limpar</button>
-    </div>
+    <!-- Barra Inferior: Área de Animação FBF 🎬 -->
+    <footer id="timeline-bar">
+      <div class="playback-controls">
+        <button id="btnPlayPause">▶️ Play</button>
+        <label>FPS: <input type="number" id="inputFPS" value="12" min="1" max="60"></label>
+        <label><input type="checkbox" id="chkLoop" checked> Loop</label>
+        <label><input type="checkbox" id="chkCascaCebola"> Casca de Cebola</label>
+      </div>
 
-    <div class="tool-group">
-      <input type="color" id="colorPicker" value="#ff69b4" title="Cor">
-    </div>
+      <div class="frame-controls">
+        <button id="btnAddFrameDir">+ Frame ➡️</button>
+        <button id="btnAddFrameEsq">⬅️ + Frame</button>
+        <button id="btnDuplicarFrame">📋 Duplicar Frame</button>
+        <button id="btnExcluirFrame">🗑️ Excluir Frame</button>
+      </div>
 
-    <div class="tool-group">
-      <label>Tam: <span id="sizeVal">5</span>px</label>
-      <input type="range" id="brushSize" min="1" max="50" value="5">
-    </div>
+      <div id="timeline-frames-container">
+        <!-- Os quadros (frames) serão renderizados aqui em fila horizontal arrastável -->
+      </div>
+    </footer>
+  </div>
 
-    <div class="tool-group">
-      <label>Opac: <span id="opacityVal">100%</span></label>
-      <input type="range" id="brushOpacity" min="1" max="100" value="100">
-    </div>
-
-    <div class="tool-group">
-      <label>Estabilizador: <span id="stabVal">0.7</span></label>
-      <input type="range" id="stabilizerRange" min="0" max="1" step="0.1" value="0.7">
-    </div>
-  </footer>
-
-  <!-- Script principal modular (gerencia os eventos e o motor de pincel) -->
+  <!-- Script Principal Módulo Es6 -->
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
