@@ -14,7 +14,7 @@ export class LayerManager {
     this.indiceCamadaAtiva = 0;
     this.clipboardBuffer = null;
 
-    // Garante que arranca imediatamente com a primeira camada criada
+    // Força a criação imediata da primeira camada ao instanciar
     this.redefinirProjeto();
   }
 
@@ -44,6 +44,9 @@ export class LayerManager {
     const nome = nomePersonalizado || `Camada ${this.camadas.length + 1}`;
     const canvas = this.criarCanvasElemento();
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    // Limpa o canvas para garantir que não nasce preto ou com lixo de memória
+    ctx.clearRect(0, 0, this.largura, this.altura);
 
     const novaCamada = {
       id,
@@ -140,151 +143,4 @@ export class LayerManager {
   }
 
   espelharHorizontal() {
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    if (!atual || atual.tipo !== 'camada') return;
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = this.largura;
-    tempCanvas.height = this.altura;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.translate(this.largura, 0);
-    tempCtx.scale(-1, 1);
-    tempCtx.drawImage(atual.canvas, 0, 0);
-
-    atual.ctx.clearRect(0, 0, this.largura, this.altura);
-    atual.ctx.drawImage(tempCanvas, 0, 0);
-    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
-      this.historyManager.salvarEstado();
-    }
-  }
-
-  espelharVertical() {
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    if (!atual || atual.tipo !== 'camada') return;
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = this.largura;
-    tempCanvas.height = this.altura;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.translate(0, this.altura);
-    tempCtx.scale(1, -1);
-    tempCtx.drawImage(atual.canvas, 0, 0);
-
-    atual.ctx.clearRect(0, 0, this.largura, this.altura);
-    atual.ctx.drawImage(tempCanvas, 0, 0);
-    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
-      this.historyManager.salvarEstado();
-    }
-  }
-
-  copiarCamadaAtual() {
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    if (!atual || atual.tipo !== 'camada') return;
-    this.clipboardBuffer = atual.ctx.getImageData(0, 0, this.largura, this.altura);
-  }
-
-  colarCamada() {
-    if (!this.clipboardBuffer) return;
-    this.adicionarCamada('Camada Colada');
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    if (atual && atual.tipo === 'camada') {
-      atual.ctx.putImageData(this.clipboardBuffer, 0, 0);
-      if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
-        this.historyManager.salvarEstado();
-      }
-    }
-  }
-
-  definirModoMesclagemAtual(mode) {
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    if (atual && atual.tipo === 'camada') {
-      atual.blendMode = mode;
-      atual.ctx.globalCompositeOperation = mode;
-    }
-  }
-
-  obterCanvasAtivo() {
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    return (atual && atual.tipo === 'camada') ? atual.canvas : null;
-  }
-
-  obterCtxAtivo() {
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    return (atual && atual.tipo === 'camada') ? atual.ctx : null;
-  }
-
-  reorganizarDOMCanvas() {
-    if (!this.container) return;
-    this.container.innerHTML = '';
-    this.camadas.forEach(l => {
-      if (l.tipo === 'camada' && l.canvas) {
-        l.canvas.style.display = l.visivel ? 'block' : 'none';
-        this.container.appendChild(l.canvas);
-      }
-    });
-  }
-
-  atualizarUIlistaCamadas() {
-    const lista = document.getElementById('listaCamadas');
-    if (!lista) return;
-    lista.innerHTML = '';
-
-    this.camadas.forEach((l, idx) => {
-      const li = document.createElement('li');
-      li.className = `layer-item ${idx === this.indiceCamadaAtiva ? 'active' : ''}`;
-
-      if (l.tipo === 'pasta') {
-        li.innerHTML = `
-          <span>📁 <strong>${l.nome}</strong></span>
-          <button title="Excluir Pasta">🗑️</button>
-        `;
-        li.querySelector('button').onclick = () => {
-          this.camadas.splice(idx, 1);
-          this.atualizarUIlistaCamadas();
-        };
-      } else {
-        const lockIcon = l.alphaLocked ? '🔒' : '🔓';
-        const visIcon = l.visivel ? '👁️' : '🚫';
-
-        li.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 5px; flex: 1; cursor: pointer;">
-            <button class="btn-vis" title="Visibilidade">${visIcon}</button>
-            <button class="btn-lock" title="Bloqueio Alpha">${lockIcon}</button>
-            <span class="layer-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${l.nome}</span>
-          </div>
-        `;
-
-        li.onclick = (e) => {
-          if (e.target.tagName !== 'BUTTON') {
-            this.indiceCamadaAtiva = idx;
-            this.atualizarUIlistaCamadas();
-          }
-        };
-
-        li.querySelector('.layer-name').ondblclick = () => {
-          const novoNome = prompt('Renomear camada:', l.nome);
-          if (novoNome) {
-            l.nome = novoNome.trim();
-            this.atualizarUIlistaCamadas();
-          }
-        };
-
-        li.querySelector('.btn-vis').onclick = () => {
-          l.visivel = !l.visivel;
-          this.reorganizarDOMCanvas();
-          this.atualizarUIlistaCamadas();
-        };
-
-        li.querySelector('.btn-lock').onclick = () => {
-          l.alphaLocked = !l.alphaLocked;
-          if (l.alphaLocked) {
-            l.ctx.globalCompositeOperation = 'source-atop';
-          } else {
-            l.ctx.globalCompositeOperation = l.blendMode || 'source-over';
-          }
-          this.atualizarUIlistaCamadas();
-        };
-      }
-
-      lista.appendChild(li);
-    });
-  }
-}
+    const
