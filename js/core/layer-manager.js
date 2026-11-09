@@ -1,6 +1,6 @@
 /**
  * PopFlipariz - Gestor Avançado de Camadas e Pastas
- * Caminho: js/core/layer-manager.js 
+ * Caminho: js/core/layer-manager.js
  */
 
 export class LayerManager {
