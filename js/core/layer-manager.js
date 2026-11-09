@@ -12,9 +12,15 @@ export class LayerManager {
 
     this.camadas = [];
     this.indiceCamadaAtiva = 0;
-    this.clipboardBuffer = null; // Para Ctrl+C / Ctrl+V de camada
+    this.clipboardBuffer = null;
 
-    // Cria a primeira camada padrão ao iniciar
+    // Garante que arranca imediatamente com a primeira camada criada
+    this.redefinirProjeto();
+  }
+
+  redefinirProjeto() {
+    this.camadas = [];
+    this.indiceCamadaAtiva = 0;
     this.adicionarCamada('Camada 1');
   }
 
@@ -32,6 +38,8 @@ export class LayerManager {
   }
 
   adicionarCamada(nomePersonalizado = null) {
+    if (!this.container) return;
+
     const id = 'layer_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
     const nome = nomePersonalizado || `Camada ${this.camadas.length + 1}`;
     const canvas = this.criarCanvasElemento();
@@ -54,7 +62,9 @@ export class LayerManager {
     this.reorganizarDOMCanvas();
     this.atualizarUIlistaCamadas();
 
-    if (this.historyManager) this.historyManager.salvarEstado();
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   adicionarPasta() {
@@ -77,14 +87,16 @@ export class LayerManager {
       return;
     }
     const removida = this.camadas.splice(this.indiceCamadaAtiva, 1)[0];
-    if (removida.tipo === 'camada' && removida.canvas) {
+    if (removida && removida.tipo === 'camada' && removida.canvas) {
       removida.canvas.remove();
     }
     this.indiceCamadaAtiva = Math.max(0, this.indiceCamadaAtiva - 1);
     this.reorganizarDOMCanvas();
     this.atualizarUIlistaCamadas();
 
-    if (this.historyManager) this.historyManager.salvarEstado();
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   duplicarCamada() {
@@ -113,14 +125,18 @@ export class LayerManager {
     this.reorganizarDOMCanvas();
     this.atualizarUIlistaCamadas();
 
-    if (this.historyManager) this.historyManager.salvarEstado();
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   limparCamadaAtual() {
     const atual = this.camadas[this.indiceCamadaAtiva];
     if (!atual || atual.tipo !== 'camada') return;
     atual.ctx.clearRect(0, 0, this.largura, this.altura);
-    if (this.historyManager) this.historyManager.salvarEstado();
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   espelharHorizontal() {
@@ -136,7 +152,9 @@ export class LayerManager {
 
     atual.ctx.clearRect(0, 0, this.largura, this.altura);
     atual.ctx.drawImage(tempCanvas, 0, 0);
-    if (this.historyManager) this.historyManager.salvarEstado();
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   espelharVertical() {
@@ -152,14 +170,15 @@ export class LayerManager {
 
     atual.ctx.clearRect(0, 0, this.largura, this.altura);
     atual.ctx.drawImage(tempCanvas, 0, 0);
-    if (this.historyManager) this.historyManager.salvarEstado();
+    if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+      this.historyManager.salvarEstado();
+    }
   }
 
   copiarCamadaAtual() {
     const atual = this.camadas[this.indiceCamadaAtiva];
     if (!atual || atual.tipo !== 'camada') return;
     this.clipboardBuffer = atual.ctx.getImageData(0, 0, this.largura, this.altura);
-    console.log('Camada copiada para a área de transferência!');
   }
 
   colarCamada() {
@@ -168,7 +187,9 @@ export class LayerManager {
     const atual = this.camadas[this.indiceCamadaAtiva];
     if (atual && atual.tipo === 'camada') {
       atual.ctx.putImageData(this.clipboardBuffer, 0, 0);
-      if (this.historyManager) this.historyManager.salvarEstado();
+      if (this.historyManager && typeof this.historyManager.salvarEstado === 'function') {
+        this.historyManager.salvarEstado();
+      }
     }
   }
 
@@ -177,14 +198,6 @@ export class LayerManager {
     if (atual && atual.tipo === 'camada') {
       atual.blendMode = mode;
       atual.ctx.globalCompositeOperation = mode;
-    }
-  }
-
-  toggleAlphaLock() {
-    const atual = this.camadas[this.indiceCamadaAtiva];
-    if (atual && atual.tipo === 'camada') {
-      atual.alphaLocked = !atual.alphaLocked;
-      this.atualizarUIlistaCamadas();
     }
   }
 
@@ -199,8 +212,8 @@ export class LayerManager {
   }
 
   reorganizarDOMCanvas() {
+    if (!this.container) return;
     this.container.innerHTML = '';
-    // Desenha de baixo para cima (ordem das camadas)
     this.camadas.forEach(l => {
       if (l.tipo === 'camada' && l.canvas) {
         l.canvas.style.display = l.visivel ? 'block' : 'none';
@@ -234,12 +247,11 @@ export class LayerManager {
         li.innerHTML = `
           <div style="display: flex; align-items: center; gap: 5px; flex: 1; cursor: pointer;">
             <button class="btn-vis" title="Visibilidade">${visIcon}</button>
-            <button class="btn-lock" title="Bloqueio Alpha (Lock Alpha)">${lockIcon}</button>
+            <button class="btn-lock" title="Bloqueio Alpha">${lockIcon}</button>
             <span class="layer-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${l.nome}</span>
           </div>
         `;
 
-        // Clicar na camada para ativá-la
         li.onclick = (e) => {
           if (e.target.tagName !== 'BUTTON') {
             this.indiceCamadaAtiva = idx;
@@ -247,7 +259,6 @@ export class LayerManager {
           }
         };
 
-        // Duplo clique para renomear
         li.querySelector('.layer-name').ondblclick = () => {
           const novoNome = prompt('Renomear camada:', l.nome);
           if (novoNome) {
@@ -256,14 +267,12 @@ export class LayerManager {
           }
         };
 
-        // Botão Visibilidade
         li.querySelector('.btn-vis').onclick = () => {
           l.visivel = !l.visivel;
           this.reorganizarDOMCanvas();
           this.atualizarUIlistaCamadas();
         };
 
-        // Botão Alpha Lock (🔒 / 🔓)
         li.querySelector('.btn-lock').onclick = () => {
           l.alphaLocked = !l.alphaLocked;
           if (l.alphaLocked) {
