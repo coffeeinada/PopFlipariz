@@ -1,114 +1,124 @@
 /**
- * PopFlipariz - Ferramenta de Ponto de Fuga & Grade
+ * PopFlipariz - Ferramenta de Ponto de Fuga e Grade Guia
  * Caminho: js/tools/ponto-fuga.js
  */
 
 export class PontoFugaTool {
   constructor(canvasContainer) {
-    this.canvasContainer = canvasContainer;
-    this.ativarGrade = true;
-    this.ativarPontoFuga = true;
-    this.corGuia = '#00ffff';
-    this.larguraGuia = 1.0;
-    this.qtdLinhas = 16;
-    
-    // Posição inicial do ponto de fuga no centro do canvas
+    this.container = canvasContainer;
+    this.ativarGrade = false;     // Inicia desligado para não poluir a tela
+    this.ativarPontoFuga = false; // Inicia desligado
+    this.corGuia = '#ff69b4';
+    this.larguraGuia = 1;
+    this.qtdLinhas = 8;
     this.pontoX = 640;
     this.pontoY = 360;
 
-    this.arrastando = false;
-    this.overlayCanvas = null;
-    this.overlayCtx = null;
-
-    this.criarOverlay();
+    this.criarOverlayGuia();
   }
 
-  criarOverlay() {
-    this.overlayCanvas = document.createElement('canvas');
-    this.overlayCanvas.width = 1280;
-    this.overlayCanvas.height = 720;
-    this.overlayCanvas.style.position = 'absolute';
-    this.overlayCanvas.style.top = '0';
-    this.overlayCanvas.style.left = '0';
-    this.overlayCanvas.style.pointerEvents = 'none'; // Deixa o rato passar para desenhar embaixo
-    this.overlayCanvas.style.zIndex = '999';
-    this.canvasContainer.appendChild(this.overlayCanvas);
-    this.overlayCtx = this.overlayCanvas.getContext('2d');
-    this.renderizar();
+  criarOverlayGuia() {
+    let overlay = document.getElementById('ponto-fuga-overlay');
+    if (!overlay) {
+      overlay = document.createElement('canvas');
+      overlay.id = 'ponto-fuga-overlay';
+      overlay.width = 1280;
+      overlay.height = 720;
+      overlay.style.position = 'absolute';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '999';
+      this.container.appendChild(overlay);
+    }
+    this.overlayCanvas = overlay;
+    this.overlayCtx = overlay.getContext('2d');
+    this.redesenharGuia();
   }
 
-  setAtivarGrade(val) { this.ativarGrade = !!val; this.renderizar(); }
-  setAtivarPontoFuga(val) { this.ativarPontoFuga = !!val; this.renderizar(); }
-  setCorGuia(c) { this.corGuia = c || '#00ffff'; this.renderizar(); }
-  setLarguraGuia(l) { this.larguraGuia = Math.max(1, Math.min(10, parseFloat(l) || 1)); this.renderizar(); }
-  setQtdLinhas(q) { this.qtdLinhas = Math.max(2, Math.min(40, parseInt(q) || 16)); this.renderizar(); }
+  setAtivarGrade(valor) {
+    this.ativarGrade = valor;
+    this.redesenharGuia();
+  }
+
+  setAtivarPontoFuga(valor) {
+    this.ativarPontoFuga = valor;
+    this.redesenharGuia();
+  }
+
+  setCorGuia(cor) {
+    this.corGuia = cor;
+    this.redesenharGuia();
+  }
+
+  setLarguraGuia(largura) {
+    this.larguraGuia = parseInt(largura) || 1;
+    this.redesenharGuia();
+  }
+
+  setQtdLinhas(qtd) {
+    this.qtdLinhas = parseInt(qtd) || 8;
+    this.redesenharGuia();
+  }
 
   atualizarPosicao(e, canvasAtivo) {
-    if (!canvasAtivo) return;
+    if (!this.ativarPontoFuga || !canvasAtivo) return;
     const rect = canvasAtivo.getBoundingClientRect();
     this.pontoX = (e.clientX - rect.left) * (canvasAtivo.width / rect.width);
     this.pontoY = (e.clientY - rect.top) * (canvasAtivo.height / rect.height);
-    this.renderizar();
+    this.redesenharGuia();
   }
 
-  renderizar() {
+  redesenharGuia() {
     if (!this.overlayCtx) return;
-    const w = this.overlayCanvas.width;
-    const h = this.overlayCanvas.height;
-    this.overlayCtx.clearRect(0, 0, w, h);
+    const ctx = this.overlayCtx;
+    ctx.clearRect(0, 0, 1280, 720);
 
-    this.overlayCtx.save();
-    this.overlayCtx.strokeStyle = this.corGuia;
-    this.overlayCtx.lineWidth = this.larguraGuia;
-    this.overlayCtx.globalAlpha = 0.5;
+    if (!this.ativarGrade && !this.ativarPontoFuga) return;
 
-    // 1. Desenhar Grade
+    ctx.strokeStyle = this.corGuia;
+    ctx.lineWidth = this.larguraGuia;
+
+    // Desenhar Grade se ativada
     if (this.ativarGrade) {
-      const passo = 40;
-      this.overlayCtx.beginPath();
-      for (let x = 0; x <= w; x += passo) {
-        this.overlayCtx.moveTo(x, 0);
-        this.overlayCtx.lineTo(x, h);
+      ctx.globalAlpha = 0.3;
+      const passo = 80;
+      for (let x = 0; x <= 1280; x += passo) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 720);
+        ctx.stroke();
       }
-      for (let y = 0; y <= h; y += passo) {
-        this.overlayCtx.moveTo(0, y);
-        this.overlayCtx.lineTo(w, y);
+      for (let y = 0; y <= 720; y += passo) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(1280, y);
+        ctx.stroke();
       }
-      this.overlayCtx.stroke();
     }
 
-    // 2. Desenhar Ponto de Fuga
+    // Desenhar Linhas do Ponto de Fuga se ativadas
     if (this.ativarPontoFuga) {
-      const totalLinhas = this.qtdLinhas;
-      const pontosBorda = [];
+      ctx.globalAlpha = 0.6;
+      const passos = this.qtdLinhas * 4;
+      for (let i = 0; i < passos; i++) {
+        const angulo = (i / passos) * Math.PI * 2;
+        const xFim = this.pontoX + Math.cos(angulo) * 2000;
+        const yFim = this.pontoY + Math.sin(angulo) * 2000;
 
-      // Gerar pontos ao longo do perímetro da tela
-      for (let i = 0; i <= totalLinhas; i++) {
-        pontosBorda.push({ x: (w / totalLinhas) * i, y: 0 }); // Topo
-        pontosBorda.push({ x: (w / totalLinhas) * i, y: h }); // Fundo
+        ctx.beginPath();
+        ctx.moveTo(this.pontoX, this.pontoY);
+        ctx.lineTo(xFim, yFim);
+        ctx.stroke();
       }
-      for (let i = 0; i <= totalLinhas; i++) {
-        pontosBorda.push({ x: 0, y: (h / totalLinhas) * i }); // Esquerda
-        pontosBorda.push({ x: w, y: (h / totalLinhas) * i }); // Direita
-      }
 
-      this.overlayCtx.beginPath();
-      pontosBorda.forEach(pt => {
-        this.overlayCtx.moveTo(this.pontoX, this.pontoY);
-        this.overlayCtx.lineTo(pt.x, pt.y);
-      });
-      this.overlayCtx.stroke();
-
-      // Cruz do centro do ponto de fuga
-      this.overlayCtx.beginPath();
-      this.overlayCtx.arc(this.pontoX, this.pontoY, 6, 0, Math.PI * 2);
-      this.overlayCtx.moveTo(this.pontoX - 10, this.pontoY);
-      this.overlayCtx.lineTo(this.pontoX + 10, this.pontoY);
-      this.overlayCtx.moveTo(this.pontoX, this.pontoY - 10);
-      this.overlayCtx.lineTo(this.pontoX, this.pontoY + 10);
-      this.overlayCtx.stroke();
+      ctx.fillStyle = this.corGuia;
+      ctx.beginPath();
+      ctx.arc(this.pontoX, this.pontoY, 4, 0, Math.PI * 2);
+      ctx.fill();
     }
-
-    this.overlayCtx.restore();
+    ctx.globalAlpha = 1.0;
   }
 }
