@@ -1,5 +1,5 @@
 /**
- * PopFlipariz - Ponto de Entrada Principal (Com Atalho de Espaço para Mover)
+ * PopFlipariz - Ponto de Entrada Principal
  * Caminho: js/main.js
  */
 
@@ -34,6 +34,9 @@ function iniciarPopFlipariz() {
     const historyManager = new HistoryManager();
     const layerManager = new LayerManager(canvasContainer, 1280, 720, historyManager);
     historyManager.definirLayerManager(layerManager);
+
+    // Garante que a UI de camadas é renderizada logo no arranque
+    layerManager.atualizarUIlistaCamadas();
 
     const animationManager = new AnimationManager(layerManager, historyManager);
     inicializarSistemaAntiPerda();
@@ -70,7 +73,6 @@ function iniciarPopFlipariz() {
       }
     }
 
-    // Interceção de cliques no workspace
     canvasContainer.addEventListener('mousedown', (e) => {
       if (ferramentaAtual === 'maozinha') return;
       atualizarReferenciaCanvasAtivo();
@@ -100,7 +102,7 @@ function iniciarPopFlipariz() {
       }
     });
 
-    canvasContainer.addEventListener('mouseup', (e) => {
+    canvasContainer.addEventListener('mouseup', () => {
       if (ferramentaAtual === 'maozinha') return;
       if (ferramentaAtual === 'formas') {
         formasTool.soltar();
@@ -157,14 +159,42 @@ function iniciarPopFlipariz() {
     ligarBotao('btnAplicarTransformacao', () => transformTool.aplicarTransformacao());
     ligarBotao('btnCancelarTransformacao', () => transformTool.cancelarTransformacao());
 
-    // --- GESTÃO DE TECLADO (Incluindo Espaço para segurar e Mover) ---
+    ligarBotao('btnNovoProjeto', () => {
+      if (confirm('Criar um novo projeto vai apagar o trabalho atual não guardado. Desejas continuar?')) {
+        fileTool.novoProjeto();
+        layerManager.atualizarUIlistaCamadas();
+        renderizarTimeline();
+        atualizarReferenciaCanvasAtivo();
+      }
+    });
+
+    ligarBotao('btnExportar', () => fileTool.exportarProjeto());
+
+    const inputFileImportar = document.getElementById('inputFileImportar');
+    ligarBotao('btnImportarProjeto', () => { if (inputFileImportar) inputFileImportar.click(); });
+
+    if (inputFileImportar) {
+      inputFileImportar.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          fileTool.importarProjeto(evt.target.result);
+          layerManager.atualizarUIlistaCamadas();
+          renderizarTimeline();
+          atualizarReferenciaCanvasAtivo();
+        };
+        reader.readAsText(file);
+        inputFileImportar.value = '';
+      };
+    }
+
     document.addEventListener('keydown', (e) => {
       const tagAtiva = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (tagAtiva === 'input' || tagAtiva === 'textarea' || tagAtiva === 'select') return;
 
       const tecla = e.key.toLowerCase();
 
-      // Pressionar Espaço ativa temporariamente o modo Mover
       if (e.code === 'Space' && !espacoPremido) {
         e.preventDefault();
         espacoPremido = true;
@@ -180,7 +210,6 @@ function iniciarPopFlipariz() {
     });
 
     document.addEventListener('keyup', (e) => {
-      // Soltar o Espaço restaura a ferramenta anterior automaticamente
       if (e.code === 'Space' && espacoPremido) {
         e.preventDefault();
         espacoPremido = false;
@@ -200,7 +229,6 @@ function iniciarPopFlipariz() {
       }
     });
 
-    // Camadas UI
     ligarBotao('btnAddCamada', () => { layerManager.adicionarCamada(); atualizarReferenciaCanvasAtivo(); });
     ligarBotao('btnAddPasta', () => layerManager.adicionarPasta());
     ligarBotao('btnDuplicarCamada', () => { layerManager.duplicarCamada(); atualizarReferenciaCanvasAtivo(); });
@@ -211,14 +239,12 @@ function iniciarPopFlipariz() {
 
     document.getElementById('selectBlendMode')?.addEventListener('change', (e) => layerManager.definirModoMesclagemAtual(e.target.value));
 
-    // Ponto de Fuga UI
     document.getElementById('chkAtivarGrade')?.addEventListener('change', (e) => pontoFugaTool.setAtivarGrade(e.target.checked));
     document.getElementById('chkAtivarPontoFuga')?.addEventListener('change', (e) => pontoFugaTool.setAtivarPontoFuga(e.target.checked));
     document.getElementById('pickerCorGuia')?.addEventListener('input', (e) => pontoFugaTool.setCorGuia(e.target.value));
     document.getElementById('inputLarguraGuia')?.addEventListener('input', (e) => pontoFugaTool.setLarguraGuia(e.target.value));
     document.getElementById('inputQtdLinhasFuga')?.addEventListener('input', (e) => pontoFugaTool.setQtdLinhas(e.target.value));
 
-    // Paletas e cores UI
     const selectPaleta = document.getElementById('selectPaleta');
     const containerCoresPaleta = document.getElementById('paleta-cores-container');
     const pickerCor = document.getElementById('pickerCorPrimaria');
@@ -267,7 +293,25 @@ function iniciarPopFlipariz() {
     ligarBotao('btnTrocarCores', () => colorManager.inverterCores());
     renderizarPaletasUI();
 
-    // Outros inputs
+    function renderizarTimeline() {
+      const container = document.getElementById('timeline-frames-container');
+      if (!container) return;
+      container.innerHTML = '';
+      animationManager.frames.forEach((frame, idx) => {
+        const thumb = document.createElement('div');
+        thumb.className = `frame-thumb ${idx === animationManager.indiceFrameAtual ? 'active' : ''}`;
+        thumb.innerText = `F-${idx + 1}`;
+        thumb.onclick = () => {
+          animationManager.carregarFrameNoWorkspace(idx);
+          renderizarTimeline();
+          atualizarReferenciaCanvasAtivo();
+        };
+        container.appendChild(thumb);
+      });
+    }
+
+    renderizarTimeline();
+
     document.getElementById('inputTamanho')?.addEventListener('input', (e) => pincelEngine?.setTamanho(e.target.value));
     document.getElementById('inputOpacidade')?.addEventListener('input', (e) => pincelEngine?.setOpacidade(e.target.value));
     document.getElementById('inputEstabilizador')?.addEventListener('input', (e) => pincelEngine?.setEstabilizador(e.target.value));
@@ -305,10 +349,6 @@ function iniciarPopFlipariz() {
     ligarBotao('btnZoomOut', () => zoomTool.zoomOut());
     ligarBotao('btnZoomReset', () => zoomTool.resetZoom());
 
-    ligarBotao('btnNovoProjeto', () => { if (confirm('Criar novo projeto?')) { fileTool.novoProjeto(); } });
-    ligarBotao('btnExportar', () => fileTool.exportarProjeto());
-
-    layerManager.atualizarUIlistaCamadas();
     console.log('PopFlipariz carregado com sucesso!');
   } catch (erro) {
     console.error('Erro ao iniciar:', erro);
